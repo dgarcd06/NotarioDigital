@@ -4,7 +4,10 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Base64;
 import java.awt.event.ActionEvent;
 
 import javax.swing.JFileChooser;
@@ -16,9 +19,11 @@ import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 
 import javafx.application.Platform;
+import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -81,7 +86,6 @@ public class NotarioDigital extends JFrame {
 					int result = selector.showOpenDialog(null);
 	                if (result == JFileChooser.APPROVE_OPTION) {
 	                    rutaPDF = selector.getSelectedFile();
-	                    String pdfURL = rutaPDF.toURI().toString();
 	                    doc = PDDocument.load(new File(rutaPDF.getAbsolutePath()));
 	                    if(doc != null) {
 	                    	pdf_cargado = 1;
@@ -92,9 +96,32 @@ public class NotarioDigital extends JFrame {
 		                    	Stage primaryStage = new Stage();
 			                    WebView webView = new WebView();
 			                    WebEngine webEngine = webView.getEngine();
-			                    webEngine.loadContent("<html><head><script type=\"text/javascript\" src=\"pdf.js\"></script></head><body>" +
-			                            "<iframe src=\"viewer.html?file=" + pdfURL + "\" width=\"100%\" height=\"100%\"></iframe>" +
-			                            "</body></html>");
+								try {
+				                    webEngine.setUserStyleSheetLocation(getClass().getResource("/web/viewer.css").toURI().toString());
+				                    webEngine.setJavaScriptEnabled(true);
+				                    webEngine.load(getClass().getResource("/web/viewer.html").toExternalForm());
+								} catch (URISyntaxException e1) {
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+
+			                    webEngine.getLoadWorker().stateProperty().addListener((obs, oldV, newV) -> {
+			                        if (Worker.State.SUCCEEDED == newV) {
+			                            try {
+
+			                                byte[] bytes = IOUtils.toByteArray(new FileInputStream(rutaPDF));
+			                                // Base64 from java.util
+			                                String base64 = Base64.getEncoder().encodeToString(bytes);
+			                                // This must be ran on FXApplicationThread
+			                                webEngine.executeScript("openFileFromBase64('" + base64 + "')");
+			                                
+			                            } catch (Exception exc) {
+			                                exc.printStackTrace();
+			                            }
+			                        }
+			                    });
+			                    
+
 			                    primaryStage.setScene(new Scene(webView, 800, 600));
 			                    primaryStage.setTitle("PDF Viewer - JavaFX");
 			                    primaryStage.show();
@@ -150,6 +177,8 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(pdf_cargado == 1) {
 					
+				}else {
+					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.","Error",JOptionPane.ERROR_MESSAGE);
 				}
 				
 			}
@@ -161,6 +190,8 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(pdf_cargado == 1) {
 					
+				}else {
+					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.","Error",JOptionPane.ERROR_MESSAGE);
 				}
 				
 			}
