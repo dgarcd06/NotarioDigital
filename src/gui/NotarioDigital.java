@@ -39,10 +39,11 @@ public class NotarioDigital extends JFrame {
 	private static File rutaPDF;	//Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
 	private JFXPanel panel;
+	private static boolean javafx_inicializado = false;
 	
 	public NotarioDigital() {
 		this.setTitle("Notario Digital");
-		this.setSize(300, 200);
+		this.setSize(650, 500);
 		this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
 		
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -94,7 +95,7 @@ public class NotarioDigital extends JFrame {
 	                    	pdf_cargado = 1;
 	                    }
 	                    //Codigo para cargar el visor web
-	                    Platform.startup(() -> {
+	                    	iniciarJAVAFX();
 							Platform.runLater(()-> {
 			                    WebView webView = new WebView();
 			                    WebEngine webEngine = webView.getEngine();
@@ -123,8 +124,8 @@ public class NotarioDigital extends JFrame {
 			                        }
 			                    });
 			                    panel.setScene(scene);
+			                    validate();
 		                    });
-						});
 	                }
 				} catch (IOException ex) {
 					ex.printStackTrace();
@@ -178,7 +179,6 @@ public class NotarioDigital extends JFrame {
 				}else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.","Error",JOptionPane.ERROR_MESSAGE);
 				}
-				
 			}
 			
 		});
@@ -211,7 +211,7 @@ public class NotarioDigital extends JFrame {
 
 			public void actionPerformed(ActionEvent e) {
 				// TODO Escribir texto Acerca De....
-				JOptionPane.showMessageDialog(null, "Acerca de...","Acerca de...",JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, "Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales\ncon el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\".\nEsta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin\nde Grado en la Universidad de León.","Acerca de...",JOptionPane.INFORMATION_MESSAGE);
 			}
 			
 		});
@@ -242,5 +242,11 @@ public class NotarioDigital extends JFrame {
         	return 1;
         }
 	}
-
+	
+	public static void iniciarJAVAFX() {
+		if(!javafx_inicializado) {
+			Platform.startup(() -> {});
+			javafx_inicializado = true;
+		}
+	}
 }
