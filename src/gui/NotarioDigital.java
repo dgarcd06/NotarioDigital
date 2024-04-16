@@ -1,5 +1,6 @@
 package gui;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionListener;
@@ -24,10 +25,10 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
+import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import javafx.stage.Stage;
 
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -35,8 +36,9 @@ public class NotarioDigital extends JFrame {
 	private JMenu archivo, editar, ayuda;
 	private JMenuItem abrir, guardar,salir, verificar, firmar, como_firmar, acerca_de;
 	private static int pdf_cargado = 0; // Variable para comprobar si un pdf ha sido modificado/guardado
-	private File rutaPDF;	//Objeto que usaremos para cargar despues el pdf
+	private static File rutaPDF;	//Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
+	private JFXPanel panel;
 	
 	public NotarioDigital() {
 		this.setTitle("Notario Digital");
@@ -72,13 +74,14 @@ public class NotarioDigital extends JFrame {
 		menu.add(editar);
 		menu.add(ayuda);
 		
+		
+		
 		/* ACCIONES DE LOS BOTONES */
 
 		// ARCHIVO
 		abrir.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-				//TODO Comprobar la extensión del archivo (si no es pdf tiene que dar error/no dejar seleccionarlo
 				try {
 					JFileChooser selector = new JFileChooser();
 					FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
@@ -93,15 +96,16 @@ public class NotarioDigital extends JFrame {
 	                    //Codigo para cargar el visor web
 	                    Platform.startup(() -> {
 							Platform.runLater(()-> {
-		                    	Stage primaryStage = new Stage();
 			                    WebView webView = new WebView();
 			                    WebEngine webEngine = webView.getEngine();
+			                    panel = new JFXPanel();
+			            		getContentPane().add(panel,BorderLayout.CENTER);
+			                    Scene scene = new Scene(webView);
 								try {
 				                    webEngine.setUserStyleSheetLocation(getClass().getResource("/web/viewer.css").toURI().toString());
 				                    webEngine.setJavaScriptEnabled(true);
 				                    webEngine.load(getClass().getResource("/web/viewer.html").toExternalForm());
 								} catch (URISyntaxException e1) {
-									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
 
@@ -110,9 +114,7 @@ public class NotarioDigital extends JFrame {
 			                            try {
 
 			                                byte[] bytes = IOUtils.toByteArray(new FileInputStream(rutaPDF));
-			                                // Base64 from java.util
 			                                String base64 = Base64.getEncoder().encodeToString(bytes);
-			                                // This must be ran on FXApplicationThread
 			                                webEngine.executeScript("openFileFromBase64('" + base64 + "')");
 			                                
 			                            } catch (Exception exc) {
@@ -120,11 +122,7 @@ public class NotarioDigital extends JFrame {
 			                            }
 			                        }
 			                    });
-			                    
-
-			                    primaryStage.setScene(new Scene(webView, 800, 600));
-			                    primaryStage.setTitle("PDF Viewer - JavaFX");
-			                    primaryStage.show();
+			                    panel.setScene(scene);
 		                    });
 						});
 	                }
@@ -233,6 +231,7 @@ public class NotarioDigital extends JFrame {
 		select_guardar.setDialogTitle("Guardar");
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
 		select_guardar.setFileFilter(filter);
+		select_guardar.setSelectedFile(rutaPDF);
 		int result = select_guardar.showOpenDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
         	File ruta = select_guardar.getSelectedFile();
