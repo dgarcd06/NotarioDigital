@@ -1,4 +1,4 @@
-package gui;
+package modelo;
 
 public class Main {
 
