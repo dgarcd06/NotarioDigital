@@ -62,7 +62,7 @@ public class Controlador {
 			// Ejecutar el .exe
 			try {
 				File ruta = new File(dir + "\\src\\controlador\\dilithium\\firma.exe");
-				String comando[] = { "cmd", "/c", "start cmd.exe /K" };
+				String comando[] = { "cmd", "/c", "start cmd.exe /c","&& cd src","&& cd controlador","&& cd dilithium","&& firma.exe"};
 				// Abre una terminal (cmd en Windows) en el directorio especificado
 				Runtime r = Runtime.getRuntime();
 				Process p = r.exec(comando);
