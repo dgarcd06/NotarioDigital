@@ -1,9 +1,12 @@
 package modelo;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,27 +14,42 @@ import java.net.URISyntaxException;
 import java.util.Base64;
 import java.awt.event.ActionEvent;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
+import org.icepdf.core.exceptions.PDFException;
+import org.icepdf.core.exceptions.PDFSecurityException;
+import org.icepdf.core.pobjects.Document;
+import org.icepdf.core.pobjects.Page;
+import org.icepdf.core.util.GraphicsRenderingHints;
+import org.icepdf.ri.common.SwingController;
+import org.icepdf.ri.common.SwingViewBuilder;
+import org.icepdf.ri.common.views.DocumentViewController;
+import org.icepdf.ri.common.views.DocumentViewControllerImpl;
+import org.icepdf.ri.common.views.DocumentViewModel;
+import org.icepdf.core.pobjects.annotations.Annotation;
+import org.icepdf.core.pobjects.annotations.SquareAnnotation;
+
+import com.formdev.flatlaf.FlatLightLaf;
 
 import controlador.Controlador;
-import javafx.application.Platform;
-import javafx.concurrent.Worker;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.Scene;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import netscape.javascript.JSObject;
+import vista.VisorPDF;
 
+@SuppressWarnings("serial")
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private JMenuBar menu; // Menú de opciones para la pantalla
@@ -40,43 +58,52 @@ public class NotarioDigital extends JFrame {
 	private static int pdf_cargado = 0; // Variable para comprobar si un pdf ha sido modificado/guardado
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
-	private JFXPanel panel;
 	private static boolean javafx_inicializado = false;
-	private static Scene scene;
+	private static Controlador controlador;
+	private double startX, startY, endX, endY;
+	JPanel viewerComponentPanel;
+	private SwingController controller;
+	VisorPDF visor;
 
 	public NotarioDigital() {
-		this.setTitle("Notario Digital");
-		this.setSize(650, 500);
-		this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
+		try {
+			UIManager.setLookAndFeel(new FlatLightLaf());
+			this.setTitle("Notario Digital");
+			this.setSize(650, 500);
+			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
+			this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
+			menu = new JMenuBar();
 
-		/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
-		menu = new JMenuBar();
+			archivo = new JMenu("Archivo");
+			abrir = new JMenuItem("Abrir");
+			guardar = new JMenuItem("Guardar");
+			salir = new JMenuItem("Salir");
+			archivo.add(abrir);
+			archivo.add(guardar);
+			archivo.add(salir);
 
-		archivo = new JMenu("Archivo");
-		abrir = new JMenuItem("Abrir");
-		guardar = new JMenuItem("Guardar");
-		salir = new JMenuItem("Salir");
-		archivo.add(abrir);
-		archivo.add(guardar);
-		archivo.add(salir);
+			editar = new JMenu("Editar");
+			verificar = new JMenuItem("Verificar");
+			firmar = new JMenuItem("Firmar");
+			verificar.setEnabled(false);
+			firmar.setEnabled(false);
+			editar.add(firmar);
+			editar.add(verificar);
 
-		editar = new JMenu("Editar");
-		verificar = new JMenuItem("Verificar");
-		firmar = new JMenuItem("Firmar");
-		editar.add(firmar);
-		editar.add(verificar);
+			ayuda = new JMenu("Ayuda");
+			como_firmar = new JMenuItem("Cómo Firmar");
+			acerca_de = new JMenuItem("Acerca De...");
+			ayuda.add(como_firmar);
+			ayuda.add(acerca_de);
 
-		ayuda = new JMenu("Ayuda");
-		como_firmar = new JMenuItem("Cómo Firmar");
-		acerca_de = new JMenuItem("Acerca De...");
-		ayuda.add(como_firmar);
-		ayuda.add(acerca_de);
-
-		menu.add(archivo);
-		menu.add(editar);
-		menu.add(ayuda);
+			menu.add(archivo);
+			menu.add(editar);
+			menu.add(ayuda);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		/* ACCIONES DE LOS BOTONES */
 
@@ -86,76 +113,55 @@ public class NotarioDigital extends JFrame {
 				// Si ya hay un pdf cargado SIN GUARDAR (pdf_cargado == 2 es que está
 				// modificado) hay que cerrarlo para abrir otro
 				if (pdf_cargado == 2) {
-
 					int option = JOptionPane.showConfirmDialog(null,
 							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de cerrarlo?");
 					if (option == 0) {
 						try {
 							guardar();
 							pdf_cargado = 0;
-							Platform.exit();
 						} catch (Exception ex) {
 							JOptionPane.showMessageDialog(null,
-									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"+ex.getMessage(),
+									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
+											+ ex.getMessage(),
 									"Error", JOptionPane.ERROR_MESSAGE);
 						}
 					}
 				}
-				try {
-					JFileChooser selector = new JFileChooser();
-					FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
-					selector.setFileFilter(filter);
-					int result = selector.showOpenDialog(null);
-					if (result == JFileChooser.APPROVE_OPTION) {
-						rutaPDF = selector.getSelectedFile();
-						doc = PDDocument.load(new File(rutaPDF.getAbsolutePath()));
+				
+				JFileChooser selector = new JFileChooser();
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
+				selector.setFileFilter(filter);
+				int result = selector.showOpenDialog(null);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					rutaPDF = selector.getSelectedFile();
+					controlador = new Controlador(rutaPDF);
+					try {
+						// Cerrar el documento PDF anterior si está cargado
+						if (doc != null) {
+							doc.close();
+							visor.removeAll();
+						}
+
+						doc = PDDocument.load(rutaPDF);
 						if (doc != null) {
 							pdf_cargado = 1;
-							doc.close();
 						}
-						if (scene != null) {
-							panel.setScene(null);
-							scene = null;
-						}
-						// Codigo para cargar el visor web
-						iniciarJAVAFX();
-						Platform.runLater(() -> {
-							WebView webView = new WebView();
-							WebEngine webEngine = webView.getEngine();
-							panel = new JFXPanel();
-							scene = new Scene(webView);
-							getContentPane().add(panel, BorderLayout.CENTER);
-							try {
-								webEngine.setUserStyleSheetLocation(
-										getClass().getResource("/vista/web/viewer.css").toURI().toString());
-								webEngine.setJavaScriptEnabled(true);
-								webEngine.load(getClass().getResource("/vista/web/viewer.html").toExternalForm());
-							} catch (URISyntaxException e1) {
-								e1.printStackTrace();
-							}
 
-							webEngine.getLoadWorker().stateProperty().addListener((obs, oldV, newV) -> {
-								if (Worker.State.SUCCEEDED == newV) {
-									JSObject window = (JSObject) webEngine.executeScript("window");
-									window.setMember("javaConnector", new Controlador());
-									try {
+						// Cargar el visor web
+						verificar.setEnabled(true);
+						firmar.setEnabled(true);
 
-										byte[] bytes = IOUtils.toByteArray(new FileInputStream(rutaPDF));
-										String base64 = Base64.getEncoder().encodeToString(bytes);
-										webEngine.executeScript("openFileFromBase64('" + base64 + "')");
-
-									} catch (Exception exc) {
-										exc.printStackTrace();
-									}
-								}
-							});
-							panel.setScene(scene);
-						});
+						// Inicializar el controlador de Swing
+						controller = new SwingController();
+						visor = new VisorPDF(controller,rutaPDF);
+						
+						// Agregar el componente de visualización al marco
+						getContentPane().add(visor, BorderLayout.CENTER);
+						visor.cargarPDF();
+					} catch (IOException ex) {
+						ex.printStackTrace();
 					}
-				} catch (IOException ex) {
-					ex.printStackTrace();
 				}
-
 			}
 		});
 
@@ -164,12 +170,13 @@ public class NotarioDigital extends JFrame {
 				if (pdf_cargado == 0) {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF", "Guardar",
 							JOptionPane.INFORMATION_MESSAGE);
-				}else {
+				} else {
 					try {
 						guardar();
 					} catch (Exception ex) {
 						JOptionPane.showMessageDialog(null,
-								"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"+ex.getMessage(),
+								"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
+										+ ex.getMessage(),
 								"Error", JOptionPane.ERROR_MESSAGE);
 					}
 				}
@@ -188,7 +195,8 @@ public class NotarioDigital extends JFrame {
 							System.exit(0);
 						} catch (Exception ex) {
 							JOptionPane.showMessageDialog(null,
-									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n" + ex.getMessage(),
+									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
+											+ ex.getMessage(),
 									"Error", JOptionPane.ERROR_MESSAGE);
 						}
 					} else if (option == 1) {
@@ -205,18 +213,37 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado == 1) {
 					/**
-					 * TODO
-					 *  Aqui se puede usar el objeto scene para pintar la firma
-					 *  scene.setOnMousePressed
-					 *  scene.setOnMouse...
+					 * TODO Aqui se puede usar el objeto scene para pintar la firma Se usa el objeto
+					 * "controlador" que debe estar inicializado en "abrir" No debería haber error
+					 * porque sólo se ejecuta este código cuando se abre un pdf-> COMPROBAR!
 					 */
+					/*BufferedImage image = ImageIO.read(new File("ruta/a/imagen.png"));
+					String keystorePath = "ruta/al/almacen_de_claves.p12";
+					String keystorePassword = "contraseña_del_almacén";
+					String keyAlias = "alias_de_la_clave";
+					String keyPassword = "contraseña_de_la_clave";
+					PDVisibleSignDesigner visibleSignDesigner;
+					try {
+						visibleSignDesigner = new PDVisibleSignDesigner(rutaPDF.toString(),image,1);
+						PDVisibleSigProperties visibleSigProperties = new PDVisibleSigProperties();
+						visibleSigProperties.signerName("Nombre del firmante").signerLocation("Ubicación del firmante")
+								.signatureReason("Razón de la firma").preferredSize(0).page(1).visualSignEnabled(true)
+								.setPdVisibleSignature(visibleSignDesigner).buildSignature();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}*/
 					
+					if(controlador != null) {
+						System.out.println(controlador.firmar());
+						controlador.leerArchivoFirma();
+						//dibujarFirma(controller,0);
+					}
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
-
 		});
 
 		verificar.addActionListener(new ActionListener() {
@@ -224,24 +251,23 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado == 1) {
 
+					controlador.verificar();
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
-
 			}
-
 		});
 
 		// ACCIONES DE AYUDA
 		como_firmar.addActionListener(new ActionListener() {
-
 			public void actionPerformed(ActionEvent e) {
 				// TODO Escribir texto Como firmar
-				JOptionPane.showMessageDialog(null, "Como firmar", "Como firmar", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null,
+						"Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.",
+						"Como firmar", JOptionPane.INFORMATION_MESSAGE);
 
 			}
-
 		});
 
 		acerca_de.addActionListener(new ActionListener() {
@@ -256,7 +282,6 @@ public class NotarioDigital extends JFrame {
 		});
 
 		this.setJMenuBar(menu);
-		this.setVisible(true);
 	}
 
 	/**
@@ -281,24 +306,28 @@ public class NotarioDigital extends JFrame {
 			return 1;
 		}
 	}
-	/**
-	 * Método para cargar la interfaz sobre la que se renderizará el PDF
-	 */
-	public static void iniciarJAVAFX() {
-		if (!javafx_inicializado) {
-			Platform.startup(() -> {
-			});
-			javafx_inicializado = true;
-		}
-	}
-	/**
-	 * Verifica la firma digital sobre un PDF
-	 * @param clave_publica La clave pública del firmante
-	 * @param firma La firma que se comprobará
-	 * @return 0 si la firma se verifica correctamente; 1 si la firma no se verifica
-	 */
-	public static int verificar(long clave_publica,long firma) {
-		
-		return 0;
-	}
+
+	/*private static void dibujarFirma(SwingController controller, int pageIndex) {
+		DocumentViewController documentController = controller.getDocumentViewController();
+        DocumentViewModel documentViewModel = documentController.getDocumentViewModel();
+        Document document = documentViewModel.getDocument();
+        Page page = document.getPageTree().getPage(pageIndex);
+
+        // Crear un rectángulo para el área de la firma
+        Rectangle rect = new Rectangle(100, 100, 200, 50); // Cambia las coordenadas y dimensiones según sea necesario
+
+        // Crear una anotación de rectángulo para el área de la firma
+        SquareAnnotation signatureAreaAnnotation = new SquareAnnotation(pageIndex, rect);
+
+        // Establecer el color y grosor del borde del rectángulo
+        signatureAreaAnnotation.setColor(Color.RED);
+        signatureAreaAnnotation.setBorderStyle(new BasicStroke(2)); // Grosor de la línea
+
+        // Agregar la anotación al documento
+        page.getAnnotations().add(signatureAreaAnnotation);
+
+        // Repintar la página para mostrar la nueva anotación
+        documentController.getPageComponents().get(pageIndex).repaint();
+    }
+	}*/
 }

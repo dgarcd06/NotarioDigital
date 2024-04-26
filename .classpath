@@ -7,14 +7,8 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/pdfbox-app-2.0.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/scenebuilder-kit-21.0.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.base.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.controls.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.fxml.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.graphics.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.media.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.swing.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx.web.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/javafx-sdk-22/lib/javafx-swt.jar"/>
+	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/flatlaf-3.4.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/icepdf/icepdf-core-7.2.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/icepdf/icepdf-viewer-7.2.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
