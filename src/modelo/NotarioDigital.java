@@ -217,13 +217,14 @@ public class NotarioDigital extends JFrame {
 					 * "controlador" que debe estar inicializado en "abrir" No debería haber error
 					 * porque sólo se ejecuta este código cuando se abre un pdf-> COMPROBAR!
 					 */
-					/*BufferedImage image = ImageIO.read(new File("ruta/a/imagen.png"));
-					String keystorePath = "ruta/al/almacen_de_claves.p12";
-					String keystorePassword = "contraseña_del_almacén";
-					String keyAlias = "alias_de_la_clave";
-					String keyPassword = "contraseña_de_la_clave";
-					PDVisibleSignDesigner visibleSignDesigner;
-					try {
+					
+					/*try {
+						BufferedImage image = ImageIO.read(new File("C:\\Users\\David\\Pictures\\GBKuCm5b0AAgHOA.jpg"));
+						String keystorePath = "ruta/al/almacen_de_claves.p12";
+						String keystorePassword = "contraseña_del_almacén";
+						String keyAlias = "alias_de_la_clave";
+						String keyPassword = "contraseña_de_la_clave";
+						PDVisibleSignDesigner visibleSignDesigner;
 						visibleSignDesigner = new PDVisibleSignDesigner(rutaPDF.toString(),image,1);
 						PDVisibleSigProperties visibleSigProperties = new PDVisibleSigProperties();
 						visibleSigProperties.signerName("Nombre del firmante").signerLocation("Ubicación del firmante")
@@ -235,9 +236,10 @@ public class NotarioDigital extends JFrame {
 					}*/
 					
 					if(controlador != null) {
-						System.out.println(controlador.firmar());
+						controlador.firmar();
+						controlador.setArchivoFirma();
 						controlador.leerArchivoFirma();
-						//dibujarFirma(controller,0);
+						
 					}
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -250,8 +252,10 @@ public class NotarioDigital extends JFrame {
 			// TODO
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado == 1) {
-
-					controlador.verificar();
+					if(controlador != null) {
+						System.out.println(controlador.verificar());
+					}
+					
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -306,28 +310,4 @@ public class NotarioDigital extends JFrame {
 			return 1;
 		}
 	}
-
-	/*private static void dibujarFirma(SwingController controller, int pageIndex) {
-		DocumentViewController documentController = controller.getDocumentViewController();
-        DocumentViewModel documentViewModel = documentController.getDocumentViewModel();
-        Document document = documentViewModel.getDocument();
-        Page page = document.getPageTree().getPage(pageIndex);
-
-        // Crear un rectángulo para el área de la firma
-        Rectangle rect = new Rectangle(100, 100, 200, 50); // Cambia las coordenadas y dimensiones según sea necesario
-
-        // Crear una anotación de rectángulo para el área de la firma
-        SquareAnnotation signatureAreaAnnotation = new SquareAnnotation(pageIndex, rect);
-
-        // Establecer el color y grosor del borde del rectángulo
-        signatureAreaAnnotation.setColor(Color.RED);
-        signatureAreaAnnotation.setBorderStyle(new BasicStroke(2)); // Grosor de la línea
-
-        // Agregar la anotación al documento
-        page.getAnnotations().add(signatureAreaAnnotation);
-
-        // Repintar la página para mostrar la nueva anotación
-        documentController.getPageComponents().get(pageIndex).repaint();
-    }
-	}*/
 }

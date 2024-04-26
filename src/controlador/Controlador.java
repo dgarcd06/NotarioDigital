@@ -19,7 +19,6 @@ public class Controlador {
 
 	public Controlador(File archivo_pdf) {
 		this.archivo_pdf = archivo_pdf;
-		this.archivo_firma = new File("datos_firma.txt");
 	}
 
 	public void coordenadasRaton(double x, double y, double width, double height) {
@@ -49,6 +48,9 @@ public class Controlador {
 	public void setFirma(String sign) {
 		this.firma = sign;
 	}
+	public void setArchivoFirma() {
+		this.archivo_firma = new File(System.getProperty("user.dir") + "\\src\\controlador\\dilithium\\datos_firma.txt");
+	}
 
 	/**
 	 * Ejecuta la firma de Dilithium. Después almacena los datos de la firma para
@@ -61,17 +63,10 @@ public class Controlador {
 		if (this.getOS().equals("Windows 10")) {
 			// Ejecutar el .exe
 			try {
-				File ruta = new File(dir + "\\src\\controlador\\dilithium\\firma.exe");
+				//Este comando ejecuta una terminal, la cual ejecuta el algoritmo de firma y despues se cierra
 				String comando[] = { "cmd", "/c", "start cmd.exe /c","&& cd src","&& cd controlador","&& cd dilithium","&& firma.exe"};
-				// Abre una terminal (cmd en Windows) en el directorio especificado
 				Runtime r = Runtime.getRuntime();
 				Process p = r.exec(comando);
-				
-				OutputStreamWriter writer = new OutputStreamWriter(p.getOutputStream());
-
-	            // Escribe el comando para ejecutar firma.exe y cierra la CMD después de ejecutarlo
-	            writer.write("firma.exe\nexit\n");
-	            writer.flush();
 				return p.waitFor();
 			} catch (Exception e) {
 				System.out.println("Error al firmar: " + e);
@@ -104,8 +99,10 @@ public class Controlador {
 		if (this.getOS().equals("Windows 10")) {
 			// Ejecutar el .exe
 			try {
-				Runtime.getRuntime().exec(dir + "\\src\\controlador\\dilithium\\verificacion.exe");
-				return 0;
+				String comando[] = { "cmd", "/c", "start cmd.exe /c","&& cd src","&& cd controlador","&& cd dilithium","&& verificacion.exe"};
+				Runtime r = Runtime.getRuntime();
+				Process p = r.exec(comando);
+				return p.waitFor();
 			} catch (Exception e) {
 				System.out.println("Error al verificar: " + e);
 				return 1;
