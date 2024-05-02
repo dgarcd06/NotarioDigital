@@ -1,14 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21">
-		<attributes>
-			<attribute name="module" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/pdfbox-app-2.0.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/flatlaf-3.4.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/icepdf/icepdf-core-7.2.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/icepdf/icepdf-viewer-7.2.0.jar"/>
+	<classpathentry kind="lib" path="bcprov-jdk18on-1.78.1.jar"/>
+	<classpathentry kind="lib" path="bcprov-jdk18on-1.78.1-sources.jar"/>
+	<classpathentry kind="lib" path="bcprov-jdk18on-1.78.1-version.jar"/>
+	<classpathentry kind="lib" path="commons-exec-1.4.0.jar"/>
+	<classpathentry kind="lib" path="flatlaf-3.4.1.jar"/>
+	<classpathentry kind="lib" path="icepdf/bcpkix-jdk18on-1.76.jar"/>
+	<classpathentry kind="lib" path="icepdf/bcprov-ext-jdk18on-1.76.jar"/>
+	<classpathentry kind="lib" path="icepdf/bcprov-jdk18on-1.76.jar"/>
+	<classpathentry kind="lib" path="icepdf/bcutil-jdk18on-1.76.jar"/>
+	<classpathentry kind="lib" path="icepdf/common-image-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/common-io-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/common-lang-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="icepdf/fontbox-2.0.27.jar"/>
+	<classpathentry kind="lib" path="icepdf/icepdf-core-7.2.0.jar"/>
+	<classpathentry kind="lib" path="icepdf/icepdf-viewer-7.2.0.jar"/>
+	<classpathentry kind="lib" path="icepdf/imageio-core-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/imageio-metadata-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/imageio-tiff-3.9.4.jar"/>
+	<classpathentry kind="lib" path="icepdf/jbig2-imageio-3.0.4.jar"/>
+	<classpathentry kind="lib" path="icepdf-core-6.1.2.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx.web.jar"/>
+	<classpathentry kind="lib" path="javafx-sdk-22/lib/javafx-swt.jar"/>
+	<classpathentry kind="lib" path="pdfbox-app-2.0.0.jar"/>
+	<classpathentry kind="lib" path="scenebuilder-kit-21.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

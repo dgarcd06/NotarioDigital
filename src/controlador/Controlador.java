@@ -6,24 +6,50 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.math.BigInteger;
+import java.security.SecureRandom;
+
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.pqc.crypto.crystals.dilithium.*;
+
+
 
 /*
  * La clase Controlador será la encargada de conectar los métodos de Dilithium con la aplicación Notario Digital
  */
 public class Controlador {
 
-	private String clave_publica, firma;
+	private DilithiumKeyPairGenerator keypair;
+	private DilithiumKeyGenerationParameters generadorClaves;
+	private DilithiumPrivateKeyParameters clavePrivada;
+	private DilithiumPublicKeyParameters clavePublica;
+	private AsymmetricCipherKeyPair parClaves;
+	private DilithiumKeyParameters params;
 	private File archivo_pdf, archivo_firma;
-	private double x, y, width, height;
-	private final String dir = System.getProperty("user.dir");
+	private int dilithiumMode;
+	private byte[] mensaje;
+	private PDSignature signature;
 
-	public Controlador(File archivo_pdf) {
+	/**
+	 * Para crear el objeto, se le pasa el archivo de PDF ¡¡¡¡REVISAR!!!! y el nivel de seguridad de Dilithium para iniciar los parámetros
+	 * @param archivo_pdf
+	 * @param dilithiumMode
+	 */
+	public Controlador(File archivo_pdf, int dilithiumMode) {
 		this.archivo_pdf = archivo_pdf;
+		this.dilithiumMode = dilithiumMode;
+		if(dilithiumMode == 3) {
+			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium3);
+		}else if(dilithiumMode == 5) {
+			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium5);
+		}else {
+			this.dilithiumMode = 2;
+			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium2);
+		}
+		this.keypair = new DilithiumKeyPairGenerator();
 	}
 
-	public void coordenadasRaton(double x, double y, double width, double height) {
-
-	}
 
 	public String getOS() {
 		return System.getProperty("os.name");
@@ -32,26 +58,33 @@ public class Controlador {
 	public File getArchivoPDF() {
 		return this.archivo_pdf;
 	}
-
-	
-	public String getClavePublica() {
-		return this.clave_publica;
+	public void setMensaje(String datos) {
+		
 	}
 
-	public String getFirma() {
-		return this.firma;
-	}
-	
-	public void setClavePublica(String pk) {
-		this.clave_publica = pk;
-	}
-	public void setFirma(String sign) {
-		this.firma = sign;
-	}
-	public void setArchivoFirma() {
-		this.archivo_firma = new File(System.getProperty("user.dir") + "\\src\\controlador\\dilithium\\datos_firma.txt");
-	}
+	public void generarClaves() {
 
+		if(this.dilithiumMode == 3) {
+			keypair.init(new DilithiumKeyGenerationParameters(
+			        new SecureRandom(),
+			        DilithiumParameters.dilithium3
+			        ));
+		}else if(this.dilithiumMode == 5) {
+			keypair.init(new DilithiumKeyGenerationParameters(
+			        new SecureRandom(),
+			        DilithiumParameters.dilithium5
+			        ));
+		}else {
+			keypair.init(new DilithiumKeyGenerationParameters(
+			        new SecureRandom(),
+			        DilithiumParameters.dilithium2
+			        ));
+		}
+		
+		parClaves = keypair.generateKeyPair();
+		this.clavePrivada = (DilithiumPrivateKeyParameters) parClaves.getPrivate();
+		this.clavePublica = (DilithiumPublicKeyParameters) parClaves.getPublic();
+		}
 	/**
 	 * Ejecuta la firma de Dilithium. Después almacena los datos de la firma para
 	 * después utilizarlos en la escritura del PDF.
@@ -59,92 +92,81 @@ public class Controlador {
 	 * @return 0 si todo está correcto. 1 si hay algún error
 	 */
 	public int firmar() {
-		// Si el sistema es Windows, ejecutar el .exe, sino, ejecutar el otro archivo
-		if (this.getOS().equals("Windows 10")) {
-			// Ejecutar el .exe
-			try {
-				//Este comando ejecuta una terminal, la cual ejecuta el algoritmo de firma y despues se cierra
-				String comando[] = { "cmd", "/c", "start cmd.exe /c","&& cd src","&& cd controlador","&& cd dilithium","&& firma.exe"};
-				Runtime r = Runtime.getRuntime();
-				Process p = r.exec(comando);
-				return p.waitFor();
-			} catch (Exception e) {
-				System.out.println("Error al firmar: " + e);
-				return -1;
-			}
-
-		} else {
-			// Ejecutar el archivo de UNIX
-			try {
-				String[] cmd = { "cmd.exe", "/c", "start", "cmd.exe", "/k", "cd",
-						dir + "\\src\\controlador\\dilithium", "&&", "exit" };
-				String[] cmd2 = {"cmd.exe", "/c"};
-				
-				Process process = Runtime.getRuntime().exec(cmd2);
-				 OutputStreamWriter writer = new OutputStreamWriter(process.getOutputStream());
-				 writer.write("cd \\src\\controlador\\dilithium");
-				 writer.flush();
-				int exitCode = process.waitFor();
-
-				return exitCode;
-			} catch (Exception e) {
-				System.out.println("Error al firmar: " + e);
-				return -1;
-			}
+		DilithiumSigner signer = new DilithiumSigner();
+		if(this.dilithiumMode == 3) {
+			signer.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium3,
+			                this.clavePrivada.getRho(),
+			                this.clavePrivada.K,
+			                this.clavePrivada.Tr,
+			                this.clavePrivada.S1,
+			                this.clavePrivada.S2,
+			                this.clavePrivada.T0,
+			                this.clavePrivada.T1)
+			        );
+		}else if(this.dilithiumMode == 5) {
+			signer.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium3,
+			                this.clavePrivada.getRho(),
+			                this.clavePrivada.K,
+			                this.clavePrivada.Tr,
+			                this.clavePrivada.S1,
+			                this.clavePrivada.S2,
+			                this.clavePrivada.T0,
+			                this.clavePrivada.T1)
+			        );
+		}else {
+			signer.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium3,
+			                this.clavePrivada.getRho(),
+			                this.clavePrivada.K,
+			                this.clavePrivada.Tr,
+			                this.clavePrivada.S1,
+			                this.clavePrivada.S2,
+			                this.clavePrivada.T0,
+			                this.clavePrivada.T1)
+			        );
 		}
+		
+		return 0;
 	}
 
 	public int verificar() {
-		// Si el sistema es Windows, ejecutar el .exe, sino, ejecutar el otro archivo
-		if (this.getOS().equals("Windows 10")) {
-			// Ejecutar el .exe
-			try {
-				String comando[] = { "cmd", "/c", "start cmd.exe /c","&& cd src","&& cd controlador","&& cd dilithium","&& verificacion.exe"};
-				Runtime r = Runtime.getRuntime();
-				Process p = r.exec(comando);
-				return p.waitFor();
-			} catch (Exception e) {
-				System.out.println("Error al verificar: " + e);
-				return 1;
-			}
-		} else {
-			// Ejecutar el archivo de UNIX
-			try {
-				Runtime.getRuntime().exec(dir + "\\src\\controlador\\dilithium\\verificacion");
-				return 0;
-			} catch (Exception e) {
-				System.out.println("Error al firmar: " + e);
-				return 1;
-			}
+		DilithiumSigner verifier = new DilithiumSigner();
+		if(this.dilithiumMode == 3) {
+			verifier.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium3,
+			                this.clavePublica.getRho(),
+			                this.clavePublica.K,
+			                this.clavePublica.Tr,
+			                this.clavePublica.S1,
+			                this.clavePublica.S2,
+			                this.clavePublica.T0,
+			                this.clavePublica.T1)
+			        );
+		}else if(this.dilithiumMode == 5) {
+			verifier.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium3,
+			                this.clavePublica.getRho(),
+			                this.clavePublica.K,
+			                this.clavePublica.Tr,
+			                this.clavePublica.S1,
+			                this.clavePublica.S2,
+			                this.clavePublica.T0,
+			                this.clavePublica.T1)
+			        );
+		}else {
+			verifier.init(true,
+					new DilithiumPrivateKeyParameters(DilithiumParameters.dilithium2,
+							this.clavePublica.getRho(),
+			                this.clavePublica.K,
+			                this.clavePublica.Tr,
+			                this.clavePublica.S1,
+			                this.clavePublica.S2,
+			                this.clavePublica.T0,
+			                this.clavePublica.T1))
+			        );
 		}
 
-	}
-
-	public void leerArchivoFirma() {
-		 try (BufferedReader br = new BufferedReader(new FileReader(this.archivo_firma))) {
-	            String linea;
-
-	            // Leer cada línea del archivo
-	            while ((linea = br.readLine()) != null) {
-	                // Dividir la línea en campos usando el signo "=" como separador
-	                String[] partes = linea.split("=");
-
-	                // Verificar si la línea contiene un campo válido
-	                if (partes.length == 2) {
-	                    String campo = partes[0].trim();
-	                    String valor = partes[1].trim();
-
-	                    // Asignar el valor a la variable correspondiente
-	                    if (campo.equals("pk")) {
-	                        setClavePublica(valor);
-	                    } else if (campo.equals("sm")) {
-	                        setFirma(valor);
-	                    }
-	                    // Puedes agregar más condiciones para otros campos si es necesario
-	                }
-	            }
-	        } catch (IOException e) {
-	            System.err.println("Error al leer el archivo: " + e.getMessage());
-	        }
 	}
 }
