@@ -89,7 +89,7 @@ public class VisorPDF extends JLayeredPane{
 	private void configurarVistaPredeterminada() {
         // Configurar el modo de vista predeterminado
         this.controller.setPageViewMode(ABORT, getVerifyInputWhenFocusTarget());
-        this.controller.setToolBarVisible(true);
+        this.controller.setToolBarVisible(false);
         this.controller.getDocumentViewController().setAnnotationCallback(null);
         panelFirma.setVisible(false);
         DocumentViewModel documentViewModel = controller.getDocumentViewController().getDocumentViewModel();
@@ -99,7 +99,6 @@ public class VisorPDF extends JLayeredPane{
     }
 	public void firmaPDF() {
 		//Ocultar la barra de herramientas y cambiar el color a un grisácreo
-		 this.controller.setToolBarVisible(false);
 		panelFirma.setVisible(true);
 		panelFirma.addMouseListener(new MouseAdapter() {
 	            @Override

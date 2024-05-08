@@ -76,6 +76,9 @@ import org.bouncycastle.pqc.crypto.util.PublicKeyFactory;
 import org.bouncycastle.pqc.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec;
+
+import vista.ImagenFirma;
+
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 
 /*
@@ -107,9 +110,10 @@ public class FirmaDigital {
 	 * @param dilithiumMode
 	 */
 	public FirmaDigital(PDDocument documento, int dilithiumMode) {
-
+		
 		this.doc = documento;
 		this.dilithiumMode = dilithiumMode;
+		ImagenFirma img = new ImagenFirma("David García Diez",dilithiumMode,370,150);
 		if (dilithiumMode == 3) {
 			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(),
 					DilithiumParameters.dilithium3);
@@ -206,7 +210,14 @@ public class FirmaDigital {
 
 	public static AsymmetricCipherKeyPair generarParClaves() {
 		DilithiumKeyPairGenerator generator = new DilithiumKeyPairGenerator();
-		generator.init(new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium2));
+		if(dilithiumMode == 5) {
+			generator.init(new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium5));
+		}else if(dilithiumMode == 3) {
+			generator.init(new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium3));
+		}else {
+			generator.init(new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium2));
+		}
+		
 
 		AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
 
@@ -217,7 +228,7 @@ public class FirmaDigital {
 		try(FileOutputStream archivoOutput = new FileOutputStream(dir + "\\archivo_firmado.pdf")){
 			byte[] codigoFirma = codigoFirma();
 			// Creamos el elemento visual de firma
-			visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream("C:\\Users\\David\\Pictures\\imagen.png"), 1);
+			visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), 1);
 			visibleSignDesigner.xAxis(100).yAxis(100).zoom(0).adjustForRotation();
 			// Propiedades de la firma
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
@@ -270,30 +281,32 @@ public class FirmaDigital {
 				signatureOptions = new SignatureOptions();
 				signatureOptions.setVisualSignature(visibleSignatureProperties.getVisibleSignature());
 				signatureOptions.setPage(visibleSignatureProperties.getPage() - 1);
+				signatureOptions.setPreferredSignatureSize(13000);
 				doc.addSignature(signature, signatureInterface, signatureOptions);
 			} else {
+				signatureOptions = new SignatureOptions();
+				signatureOptions.setPreferredSignatureSize(13000);
 				doc.addSignature(signature, signatureInterface);
 			}
 			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
-
 			externalSigning.setSignature(codigoFirma);
 
 		}
-		
 	}
 
 	private static X509Certificate generarCertificado() throws OperatorCreationException, CertificateException,
 			IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
 
-		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-
 		// Generar par de claves para Dilithium
-		KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("Dilithium", "BC");
+		KeyPairGenerator keyPairGenerator; 
 		if (dilithiumMode == 5) {
+			keyPairGenerator = KeyPairGenerator.getInstance("DILITHIUM5", "BC");
 			keyPairGenerator.initialize(DilithiumParameterSpec.dilithium5);
 		} else if (dilithiumMode == 3) {
+			keyPairGenerator = KeyPairGenerator.getInstance("DILITHIUM3", "BC");
 			keyPairGenerator.initialize(DilithiumParameterSpec.dilithium3);
 		} else {
+			keyPairGenerator = KeyPairGenerator.getInstance("DILITHIUM2", "BC");
 			keyPairGenerator.initialize(DilithiumParameterSpec.dilithium2);
 		}
 		KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -301,8 +314,8 @@ public class FirmaDigital {
 		sk = keyPair.getPrivate();
 		SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(pk.getEncoded());
 		// Crear el emisor y el sujeto del certificado
-		X500Name issuerName = new X500Name("CN=Issuer");
-		X500Name subjectName = new X500Name("CN=Subject");
+		X500Name issuerName = new X500Name("CN=David García Diez");
+		X500Name subjectName = new X500Name("CN=Dgarcd06");
 
 		// Crear el generador de certificados
 		X509v3CertificateBuilder certBuilder = new X509v3CertificateBuilder(issuerName,
@@ -311,7 +324,15 @@ public class FirmaDigital {
 				subjectName, publicKeyInfo);
 
 		// Construir el firmante del certificado
-		ContentSigner signer = new JcaContentSignerBuilder("Dilithium").setProvider("BC").build(sk);
+		ContentSigner signer;
+		if(dilithiumMode == 5) {
+			signer = new JcaContentSignerBuilder("DILITHIUM5").setProvider("BC").build(sk);
+		}else if(dilithiumMode == 3) {
+			signer = new JcaContentSignerBuilder("DILITHIUM3").setProvider("BC").build(sk);
+		}else {
+			signer = new JcaContentSignerBuilder("DILITHIUM2").setProvider("BC").build(sk);
+		}
+		
 
 		// Construir el certificado
 		X509CertificateHolder certHolder = certBuilder.build(signer);

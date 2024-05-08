@@ -1,97 +1,36 @@
 package modelo;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.geom.Rectangle2D;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
-import java.util.Calendar;
 import java.awt.event.ActionEvent;
 
-import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
+import javax.swing.JPanel;
+import javax.swing.TransferHandler;
 import javax.swing.UIManager;
-import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.PDPageTree;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
-import org.apache.pdfbox.pdmodel.interactive.action.PDActionFactory;
-import org.apache.pdfbox.pdmodel.interactive.action.PDAnnotationAdditionalActions;
-import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
-import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
-import org.icepdf.core.exceptions.PDFException;
-import org.icepdf.core.exceptions.PDFSecurityException;
-import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.pobjects.Page;
-import org.icepdf.core.pobjects.acroform.SignatureDictionary;
-import org.icepdf.core.pobjects.acroform.SignatureFieldDictionary;
-import org.icepdf.core.pobjects.acroform.SignatureHandler;
-import org.icepdf.core.pobjects.acroform.signature.DigitalSignatureFactory;
-import org.icepdf.core.pobjects.acroform.signature.SignatureSigner;
-import org.icepdf.core.util.GraphicsRenderingHints;
 import org.icepdf.ri.common.SwingController;
-import org.icepdf.ri.common.SwingViewBuilder;
-import org.icepdf.ri.common.views.AnnotationComponent;
-import org.icepdf.ri.common.views.DocumentViewController;
-import org.icepdf.ri.common.views.DocumentViewControllerImpl;
-import org.icepdf.ri.common.views.DocumentViewModel;
-import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
-import org.icepdf.core.pobjects.annotations.Annotation;
-import org.icepdf.core.pobjects.annotations.SignatureWidgetAnnotation;
-import org.icepdf.core.pobjects.annotations.SquareAnnotation;
-import org.icepdf.core.pobjects.annotations.WidgetAnnotation;
-import org.icepdf.core.pobjects.AbstractStringObject;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.StampingProperties;
-import com.itextpdf.signatures.PdfSignatureAppearance;
-import com.itextpdf.signatures.PdfSigner;
-import com.itextpdf.signatures.PrivateKeySignature;
-import com.itextpdf.signatures.IExternalSignature;
-import com.itextpdf.signatures.IExternalSignatureContainer;
-import com.itextpdf.signatures.BouncyCastleDigest;
-import com.itextpdf.signatures.ExternalBlankSignatureContainer;
-import com.itextpdf.signatures.IExternalDigest;
 
 import controlador.FirmaDigital;
-import vista.ImagenFirma;
 import vista.VisorPDF;
 
 @SuppressWarnings("serial")
@@ -116,7 +55,14 @@ public class NotarioDigital extends JFrame {
 			this.setSize(650, 500);
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
 			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			this.setIconImage(Toolkit.getDefaultToolkit().getImage(dir + "\\recursos\\icono_jframe.png"));
+			/*JLabel label = new JLabel("Arrastra un archivo aquí");
+			label.setPreferredSize(new Dimension(300, 200));
 
+			JPanel contentPane = new JPanel(new BorderLayout());
+			contentPane.add(label, BorderLayout.CENTER);
+			setContentPane(contentPane);*/
+			
 			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
 			menu = new JMenuBar();
 
@@ -258,23 +204,6 @@ public class NotarioDigital extends JFrame {
 					 * porque sólo se ejecuta este código cuando se abre un pdf-> COMPROBAR!
 					 */
 
-					/*
-					 * try { BufferedImage image = ImageIO.read(new
-					 * File("C:\\Users\\David\\Pictures\\GBKuCm5b0AAgHOA.jpg")); String keystorePath
-					 * = "ruta/al/almacen_de_claves.p12"; String keystorePassword =
-					 * "contraseña_del_almacén"; String keyAlias = "alias_de_la_clave"; String
-					 * keyPassword = "contraseña_de_la_clave"; PDVisibleSignDesigner
-					 * visibleSignDesigner; visibleSignDesigner = new
-					 * PDVisibleSignDesigner(rutaPDF.toString(),image,1); PDVisibleSigProperties
-					 * visibleSigProperties = new PDVisibleSigProperties();
-					 * visibleSigProperties.signerName("Nombre del firmante").
-					 * signerLocation("Ubicación del firmante")
-					 * .signatureReason("Razón de la firma").preferredSize(0).page(1).
-					 * visualSignEnabled(true)
-					 * .setPdVisibleSignature(visibleSignDesigner).buildSignature(); } catch
-					 * (IOException e1) { // TODO Auto-generated catch block e1.printStackTrace(); }
-					 */
-
 					visor.firmaPDF();
 					// Lógica APACHE PDFBox
 
@@ -413,12 +342,7 @@ public class NotarioDigital extends JFrame {
 
 	public static void llamadaFirma(int nivelSeguridad) {
 		firmaDigital = new FirmaDigital(doc, nivelSeguridad);
-		PrivateKey privateKey = firmaDigital.getPrivateKey();
-		Certificate certificado = firmaDigital.getCertificado();
 		doc = firmaDigital.getPDDocument();
-		visor.repaint();
-		visor.validate();
-		
 		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
 	}
 }
