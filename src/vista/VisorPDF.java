@@ -48,6 +48,7 @@ public class VisorPDF extends JLayeredPane{
 		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
+		
 		this.controller = controller;
 		this.rutaPDF = documento;
 		this.factory = new SwingViewBuilder(this.controller);

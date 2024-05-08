@@ -5,12 +5,17 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.util.Calendar;
 import java.awt.event.ActionEvent;
 
 import javax.swing.JButton;
@@ -27,8 +32,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
@@ -38,24 +45,52 @@ import org.apache.pdfbox.pdmodel.interactive.action.PDAnnotationAdditionalAction
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
+import org.icepdf.core.pobjects.acroform.SignatureDictionary;
+import org.icepdf.core.pobjects.acroform.SignatureFieldDictionary;
+import org.icepdf.core.pobjects.acroform.SignatureHandler;
+import org.icepdf.core.pobjects.acroform.signature.DigitalSignatureFactory;
+import org.icepdf.core.pobjects.acroform.signature.SignatureSigner;
 import org.icepdf.core.util.GraphicsRenderingHints;
 import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingViewBuilder;
+import org.icepdf.ri.common.views.AnnotationComponent;
 import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 import org.icepdf.ri.common.views.DocumentViewModel;
+import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.Annotation;
+import org.icepdf.core.pobjects.annotations.SignatureWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.SquareAnnotation;
+import org.icepdf.core.pobjects.annotations.WidgetAnnotation;
+import org.icepdf.core.pobjects.AbstractStringObject;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.StampingProperties;
+import com.itextpdf.signatures.PdfSignatureAppearance;
+import com.itextpdf.signatures.PdfSigner;
+import com.itextpdf.signatures.PrivateKeySignature;
+import com.itextpdf.signatures.IExternalSignature;
+import com.itextpdf.signatures.IExternalSignatureContainer;
+import com.itextpdf.signatures.BouncyCastleDigest;
+import com.itextpdf.signatures.ExternalBlankSignatureContainer;
+import com.itextpdf.signatures.IExternalDigest;
 
-import controlador.Controlador;
+import controlador.FirmaDigital;
 import vista.ImagenFirma;
 import vista.VisorPDF;
 
@@ -63,14 +98,15 @@ import vista.VisorPDF;
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private JMenuBar menu; // Menú de opciones para la pantalla
-	private JMenu archivo, editar, ayuda,firma_visual, firma_rapida;
-	private JMenuItem abrir, guardar, salir, verificar,visual2,visual3,visual5,rapida2,rapida3,rapida5 , como_firmar, acerca_de;
-	private static int pdf_cargado = 0; // Variable para comprobar si un pdf ha sido modificado/guardado
+	private JMenu archivo, editar, ayuda, firma_visual, firma_rapida;
+	private JMenuItem abrir, guardar, salir, verificar, visual2, visual3, visual5, rapida2, rapida3, rapida5,
+			como_firmar, acerca_de;
+	private static int pdf_cargado = 0; // 0 = No cargado | 1 = Cargado | 2 = Modificado
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
-	private static Controlador controlador;
+	private static FirmaDigital firmaDigital;
 	private SwingController controller;
-	VisorPDF visor;
+	private static VisorPDF visor;
 	private final static String dir = System.getProperty("user.dir");
 
 	public NotarioDigital() {
@@ -79,7 +115,7 @@ public class NotarioDigital extends JFrame {
 			this.setTitle("Notario Digital");
 			this.setSize(650, 500);
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
-			this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
 			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
 			menu = new JMenuBar();
@@ -114,7 +150,7 @@ public class NotarioDigital extends JFrame {
 			firma_rapida.add(rapida3);
 			rapida5 = new JMenuItem("Dilithium 5");
 			firma_rapida.add(rapida5);
-			
+
 			ayuda = new JMenu("Ayuda");
 			como_firmar = new JMenuItem("Cómo Firmar");
 			acerca_de = new JMenuItem("Acerca De...");
@@ -208,26 +244,7 @@ public class NotarioDigital extends JFrame {
 
 		salir.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// Si hay un PDF modificado sin guardar, se preguntará antes de salir
-				if (pdf_cargado == 2) {
-					int option = JOptionPane.showConfirmDialog(null,
-							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de salir?");
-					if (option == 0) {
-						try {
-							guardar();
-							System.exit(0);
-						} catch (Exception ex) {
-							JOptionPane.showMessageDialog(null,
-									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
-											+ ex.getMessage(),
-									"Error", JOptionPane.ERROR_MESSAGE);
-						}
-					} else if (option == 1) {
-						System.exit(0);
-					}
-				} else {
-					System.exit(0);
-				}
+				salir();
 			}
 		});
 
@@ -258,7 +275,6 @@ public class NotarioDigital extends JFrame {
 					 * (IOException e1) { // TODO Auto-generated catch block e1.printStackTrace(); }
 					 */
 
-					controlador.firmar();
 					visor.firmaPDF();
 					// Lógica APACHE PDFBox
 
@@ -291,9 +307,11 @@ public class NotarioDigital extends JFrame {
 		verificar.addActionListener(new ActionListener() {
 			// TODO
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado == 1) {
-					if (controlador != null) {
-						System.out.println(controlador.verificar());
+				if (pdf_cargado != 0) {
+					if (firmaDigital.verificar()) {
+						System.out.println("Firma verificada!!!");
+					} else {
+						System.out.println("Algo está mal");
 					}
 
 				} else {
@@ -326,6 +344,13 @@ public class NotarioDigital extends JFrame {
 		});
 
 		this.setJMenuBar(menu);
+		// TODO REVISAR
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				salir();
+			}
+		});
+
 	}
 
 	/**
@@ -335,67 +360,65 @@ public class NotarioDigital extends JFrame {
 	 * @throws IOException
 	 */
 	public static int guardar() throws IOException {
-		JFileChooser select_guardar = new JFileChooser();
-		select_guardar.setDialogTitle("Guardar");
-		FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
-		select_guardar.setFileFilter(filter);
-		select_guardar.setSelectedFile(rutaPDF);
-		int result = select_guardar.showOpenDialog(null);
-		if (result == JFileChooser.APPROVE_OPTION) {
-			File ruta = select_guardar.getSelectedFile();
-			doc.save(ruta);
-			pdf_cargado = 0;
-			return 0;
+		if (pdf_cargado != 0) {
+			JFileChooser select_guardar = new JFileChooser();
+			select_guardar.setDialogTitle("Guardar");
+			FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
+			select_guardar.setFileFilter(filter);
+			select_guardar.setSelectedFile(rutaPDF);
+			int result = select_guardar.showOpenDialog(null);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File ruta = select_guardar.getSelectedFile();
+				doc.save(ruta);
+				pdf_cargado = 0;
+				return 0;
+			} else {
+				return 1;
+			}
 		} else {
+			JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF");
 			return 1;
 		}
+
 	}
 
-	public static void escribirFirma(PDPage pagina) throws IOException {
-		PDSignature signature = new PDSignature();
-		signature.setByteRange(new int[] { 0, 0, 0, 0 });
-		PDAnnotationWidget widget = new PDAnnotationWidget();
-		widget.setRectangle(new PDRectangle(350, 200, 350, 300));
-		PDAction action = PDActionFactory.createAction(null);
-		widget.setAction(action);
-		PDAnnotationAdditionalActions additionalActions = new PDAnnotationAdditionalActions();
-
-		widget.setActions(additionalActions);
-		/*
-		 * SignatureInterface signatureInterface = new SignatureInterface() {
-		 * 
-		 * @Override public byte[] sign(InputStream content) throws IOException { //
-		 * Aquí deberías implementar la lógica de firmado digital return signatureBytes;
-		 * }
-		 * 
-		 * public InputStream getRangeStream() throws IOException { return null; // No
-		 * necesitamos esta implementación para este caso } };
-		 */
-		// doc.addSignature(signature, signatureInterface);
-
-		try (PDPageContentStream contentStream = new PDPageContentStream(doc, pagina,
-				PDPageContentStream.AppendMode.APPEND, true, true)) {
-			PDImageXObject pdImageXObject = PDImageXObject.createFromFile(dir + "\\recursos\\firma.png", doc);
-			contentStream.drawImage(pdImageXObject, 100, 100 - 20, pdImageXObject.getWidth() / 4,
-					pdImageXObject.getHeight() / 4);
+	public static void salir() {
+		// Si hay un PDF modificado sin guardar, se preguntará antes de salir
+		if (pdf_cargado == 2) {
+			int option = JOptionPane.showOptionDialog(null,
+					"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de salir?",
+					"Archivo Modificado", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null,
+					new String[] { "Guardar", "No Guardar", "Cancelar" }, "Guardar");
+			switch (option) {
+			case JOptionPane.YES_OPTION:
+				try {
+					guardar();
+					System.exit(0);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				break;
+			case JOptionPane.NO_OPTION:
+				System.exit(0);
+				break;
+			case JOptionPane.CANCEL_OPTION:
+				break;
+			case JOptionPane.CLOSED_OPTION:
+				break;
+			}
+		} else {
+			System.exit(0);
 		}
 	}
+
 	public static void llamadaFirma(int nivelSeguridad) {
-		controlador = new Controlador(rutaPDF,nivelSeguridad);
-		controlador.generarClaves();
+		firmaDigital = new FirmaDigital(doc, nivelSeguridad);
+		PrivateKey privateKey = firmaDigital.getPrivateKey();
+		Certificate certificado = firmaDigital.getCertificado();
+		doc = firmaDigital.getPDDocument();
+		visor.repaint();
+		visor.validate();
 		
-
-		PDSignature signature = new PDSignature();
-		signature.setFilter(PDSignature.FILTER_ADOBE_PPKLITE);
-		signature.setSubFilter(PDSignature.SUBFILTER_ADBE_PKCS7_DETACHED);
-		signature.setName("nombre_de_firma");
-		signature.setLocation("ubicación_de_firma");
-		signature.setReason("razón_de_firma");
-
-		// Establecer la clave privada y el certificado en la firma
-		/*signature.setPrivateKey(controlador.getClavePrivada());
-		signature.setCertificate(controlador.getFirma());
-
-		doc.addSignature(signature);*/
+		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
 	}
 }
