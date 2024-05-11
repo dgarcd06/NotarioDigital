@@ -1,7 +1,5 @@
-package controlador;
+package modelo;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,7 +7,6 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -17,28 +14,16 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Random;
 
-import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.examples.signature.SigUtils;
-import org.apache.pdfbox.examples.signature.ValidationTimeStamp;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.ExternalSigningSupport;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
@@ -46,18 +31,11 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -65,34 +43,29 @@ import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.CMSTypedData;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.*;
-import org.bouncycastle.pqc.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.pqc.crypto.util.PublicKeyFactory;
-import org.bouncycastle.pqc.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec;
 
 import vista.ImagenFirma;
+import vista.VisorPDF;
 
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 
 /*
  * La clase Controlador será la encargada de conectar los métodos de Dilithium con la aplicación Notario Digital
  */
+@SuppressWarnings("static-access")
 public class FirmaDigital {
 
-	private DilithiumKeyGenerationParameters generadorClaves;
-	private static DilithiumPrivateKeyParameters clavePrivada;
-	private static DilithiumPublicKeyParameters clavePublica;
-	private static AsymmetricCipherKeyPair parClaves;
-	private DilithiumKeyParameters params;
+	private  AsymmetricCipherKeyPair parClaves;
 	private static int dilithiumMode;
-	private static byte[] mensaje, firma;
+	private static byte[] mensaje;
+	private static byte[] firma;
 	private static SignatureOptions signatureOptions;
 	private static PDVisibleSignDesigner visibleSignDesigner;
 	private final static PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
@@ -101,7 +74,9 @@ public class FirmaDigital {
 	private static PublicKey pk;
 	private static X509Certificate certificado;
 	private final static String dir = System.getProperty("user.dir");
-
+	private static String archivo_output;
+	private static VisorPDF visorPDF;
+	private static PDSignature datosFirma;
 	/**
 	 * Para crear el objeto, se le pasa el archivo de PDF ¡¡¡¡REVISAR!!!! y el nivel
 	 * de seguridad de Dilithium para iniciar los parámetros
@@ -109,28 +84,31 @@ public class FirmaDigital {
 	 * @param archivo_pdf
 	 * @param dilithiumMode
 	 */
-	public FirmaDigital(PDDocument documento, int dilithiumMode) {
+	
+	public FirmaDigital(PDDocument documento, int dilithiumMode, String rutaPDF, VisorPDF visor) {
 		
-		this.doc = documento;
+		visorPDF = visor;
+		archivo_output = rutaPDF.substring(0,rutaPDF.lastIndexOf("."));
+		archivo_output = archivo_output + "_firmado.pdf";
+		doc = documento;
 		this.dilithiumMode = dilithiumMode;
-		ImagenFirma img = new ImagenFirma("David García Diez",dilithiumMode,370,150);
+		new ImagenFirma("David García Diez",dilithiumMode,370,150);
 		if (dilithiumMode == 3) {
-			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(),
+			new DilithiumKeyGenerationParameters(new SecureRandom(),
 					DilithiumParameters.dilithium3);
 		} else if (dilithiumMode == 5) {
-			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(),
+			new DilithiumKeyGenerationParameters(new SecureRandom(),
 					DilithiumParameters.dilithium5);
 		} else {
 			dilithiumMode = 2;
-			this.generadorClaves = new DilithiumKeyGenerationParameters(new SecureRandom(),
+			new DilithiumKeyGenerationParameters(new SecureRandom(),
 					DilithiumParameters.dilithium2);
 		}
 		parClaves = generarParClaves();
 		mensaje = "¡Dilithium!".getBytes();
 		try {
-			firmar((DilithiumPrivateKeyParameters) parClaves.getPrivate(), this.mensaje);
+			firmar((DilithiumPrivateKeyParameters) parClaves.getPrivate(), mensaje);
 		} catch (OperatorCreationException | CertificateException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -140,11 +118,14 @@ public class FirmaDigital {
 	}
 
 	public PDDocument getPDDocument() {
-		return this.doc;
+		return doc;
 	}
 
 	public byte[] getFirma() {
 		return firma;
+	}
+	public AsymmetricKeyParameter getClavePublica() {
+		return this.parClaves.getPublic();
 	}
 
 	public X509Certificate getCertificado() {
@@ -193,19 +174,23 @@ public class FirmaDigital {
 	}
 
 	public boolean verificar() {
-		DilithiumSigner verifier = new DilithiumSigner();
-		DilithiumPublicKeyParameters publicKey = (DilithiumPublicKeyParameters) parClaves.getPublic();
-		if (dilithiumMode == 3) {
-			verifier.init(false,
-					new DilithiumPublicKeyParameters(DilithiumParameters.dilithium3, publicKey.getEncoded()));
-		} else if (dilithiumMode == 5) {
-			verifier.init(false,
-					new DilithiumPublicKeyParameters(DilithiumParameters.dilithium5, publicKey.getEncoded()));
-		} else {
-			verifier.init(false,
-					new DilithiumPublicKeyParameters(DilithiumParameters.dilithium2, publicKey.getEncoded()));
+		if(datosFirma != null){
+			DilithiumSigner verifier = new DilithiumSigner();
+			DilithiumPublicKeyParameters publicKey = (DilithiumPublicKeyParameters) parClaves.getPublic();
+			if (dilithiumMode == 3) {
+				verifier.init(false,
+						new DilithiumPublicKeyParameters(DilithiumParameters.dilithium3, publicKey.getEncoded()));
+			} else if (dilithiumMode == 5) {
+				verifier.init(false,
+						new DilithiumPublicKeyParameters(DilithiumParameters.dilithium5, publicKey.getEncoded()));
+			} else {
+				verifier.init(false,
+						new DilithiumPublicKeyParameters(DilithiumParameters.dilithium2, publicKey.getEncoded()));
+			}
+			return verifier.verifySignature(this.mensaje, this.firma);
+		}else {
+			return false;
 		}
-		return verifier.verifySignature(this.mensaje, this.firma);
 	}
 
 	public static AsymmetricCipherKeyPair generarParClaves() {
@@ -225,14 +210,14 @@ public class FirmaDigital {
 	}
 
 	public static void firmarDocumento() throws CertificateEncodingException, OperatorCreationException, CertificateException, IOException {
-		try(FileOutputStream archivoOutput = new FileOutputStream(dir + "\\archivo_firmado.pdf")){
+		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
 			byte[] codigoFirma = codigoFirma();
 			// Creamos el elemento visual de firma
 			visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), 1);
 			visibleSignDesigner.xAxis(100).yAxis(100).zoom(0).adjustForRotation();
 			// Propiedades de la firma
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
-					.signatureReason("Firma con Dilithium").preferredSize(50).page(1).visualSignEnabled(true)
+					.signatureReason("Firma con Dilithium").preferredSize(50).page(visorPDF.getController().getCurrentPageNumber()).visualSignEnabled(true)
 					.setPdVisibleSignature(visibleSignDesigner);
 
 			int accessPermissions = SigUtils.getMDPPermission(doc);
@@ -246,16 +231,8 @@ public class FirmaDigital {
 			}
 			PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
 			if (acroForm != null && acroForm.getNeedAppearances()) {
-				// PDFBOX-3738 NeedAppearances true results in visible signature becoming
-				// invisible
-				// with Adobe Reader
 				if (acroForm.getFields().isEmpty()) {
-					// we can safely delete it if there are no fields
 					acroForm.getCOSObject().removeItem(COSName.NEED_APPEARANCES);
-					// note that if you've set MDP permissions, the removal of this item
-					// may result in Adobe Reader claiming that the document has been changed.
-					// and/or that field content won't be displayed properly.
-					// ==> decide what you prefer and adjust your code accordingly.
 				} else {
 					System.out.println("/NeedAppearances is set, signature may be ignored by Adobe Reader");
 				}

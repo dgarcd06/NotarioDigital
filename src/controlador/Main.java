@@ -1,4 +1,4 @@
-package modelo;
+package controlador;
 
 import java.security.Security;
 
@@ -11,5 +11,4 @@ public class Main {
 		NotarioDigital n = new NotarioDigital();
 		n.setVisible(true);
 	}
-
 }

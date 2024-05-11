@@ -1,38 +1,37 @@
-package modelo;
+package controlador;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.awt.event.ActionEvent;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenuBar;
 import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
 import org.icepdf.ri.common.SwingController;
 
 import com.formdev.flatlaf.FlatLightLaf;
 
-import controlador.FirmaDigital;
+import modelo.FirmaDigital;
+import vista.FrameVisual;
 import vista.VisorPDF;
 
+/**
+ * Frame principal de la aplicación.
+ * Aquí se coordinan las funciones lógicas de Dilithium con el visor PDF.
+ */
 @SuppressWarnings("serial")
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -44,7 +43,6 @@ public class NotarioDigital extends JFrame {
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
 	private static FirmaDigital firmaDigital;
-	private SwingController controller;
 	private static VisorPDF visor;
 	private final static String dir = System.getProperty("user.dir");
 
@@ -56,13 +54,14 @@ public class NotarioDigital extends JFrame {
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
 			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 			this.setIconImage(Toolkit.getDefaultToolkit().getImage(dir + "\\recursos\\icono_jframe.png"));
-			/*JLabel label = new JLabel("Arrastra un archivo aquí");
-			label.setPreferredSize(new Dimension(300, 200));
+			/*
+			 * JLabel label = new JLabel("Arrastra un archivo aquí");
+			 * label.setPreferredSize(new Dimension(300, 200));
+			 * 
+			 * JPanel contentPane = new JPanel(new BorderLayout()); contentPane.add(label,
+			 * BorderLayout.CENTER); setContentPane(contentPane);
+			 */
 
-			JPanel contentPane = new JPanel(new BorderLayout());
-			contentPane.add(label, BorderLayout.CENTER);
-			setContentPane(contentPane);*/
-			
 			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
 			menu = new JMenuBar();
 
@@ -156,8 +155,7 @@ public class NotarioDigital extends JFrame {
 						firma_visual.setEnabled(true);
 						firma_rapida.setEnabled(true);
 						// Inicializar el controlador de Swing
-						controller = new SwingController();
-						visor = new VisorPDF(controller, rutaPDF);
+						visor = new VisorPDF(new SwingController(), rutaPDF);
 
 						// Agregar el componente de visualización al marco
 
@@ -195,7 +193,7 @@ public class NotarioDigital extends JFrame {
 		});
 
 		// ACCIONES DE EDITAR
-		firma_visual.addActionListener(new ActionListener() {
+		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado == 1) {
 					/**
@@ -204,10 +202,9 @@ public class NotarioDigital extends JFrame {
 					 * porque sólo se ejecuta este código cuando se abre un pdf-> COMPROBAR!
 					 */
 
-					visor.firmaPDF();
-					// Lógica APACHE PDFBox
-
-					PDPage paginaPDF = doc.getPage(visor.getController().getCurrentPageNumber());
+					FrameVisual panel_firma = new
+					FrameVisual(getSize().width,getSize().height,dim.width / 2 - getSize().width
+					/ 2, dim.height / 2 - getSize().height / 2);
 
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -341,8 +338,7 @@ public class NotarioDigital extends JFrame {
 	}
 
 	public static void llamadaFirma(int nivelSeguridad) {
-		firmaDigital = new FirmaDigital(doc, nivelSeguridad);
-		doc = firmaDigital.getPDDocument();
+		firmaDigital = new FirmaDigital(doc, nivelSeguridad, rutaPDF.getAbsolutePath(), visor);
 		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
 	}
 }
