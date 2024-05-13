@@ -12,7 +12,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Calendar;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
@@ -28,13 +32,23 @@ import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.examples.signature.SigUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.ExternalSigningSupport;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.icepdf.ri.common.SwingController;
 
 import com.formdev.flatlaf.FlatLightLaf;
 
 import modelo.FirmaDigital;
 import vista.FrameVisual;
+import vista.ImagenFirma;
 import vista.VisorPDF;
 
 /**
@@ -129,7 +143,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				// Si ya hay un pdf cargado SIN GUARDAR (pdf_cargado == 2 es que está
 				// modificado) hay que cerrarlo para abrir otro
-				remove(panel);	//El panel de arrastrar archivos
+				
 				if (pdf_cargado == 2) {
 					int option = JOptionPane.showConfirmDialog(null,
 							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de cerrarlo?");
@@ -151,6 +165,8 @@ public class NotarioDigital extends JFrame {
 				selector.setFileFilter(filter);
 				int result = selector.showOpenDialog(null);
 				if (result == JFileChooser.APPROVE_OPTION) {
+					panel.removeAll();	//El panel de arrastrar archivos
+					panel.setBorder(null);
 					rutaPDF = selector.getSelectedFile();
 					try {
 						// Cerrar el documento PDF anterior si está cargado
@@ -175,6 +191,8 @@ public class NotarioDigital extends JFrame {
 
 						getContentPane().add(visor, BorderLayout.CENTER);
 						visor.cargarPDF();
+						revalidate();
+						repaint();
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
@@ -213,9 +231,13 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					if (panelFirma.getFirmaDeseada()) {
-						llamadaFirma(2);
-					}
+					//TODO Esperar a la seleccion del rectangulo. NO FUNCIONA ESPERA ACTIVA
+						try {
+							llamadaFirma(2,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+					
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -230,7 +252,11 @@ public class NotarioDigital extends JFrame {
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					if (panelFirma.getFirmaDeseada()) {
-						llamadaFirma(3);
+						try {
+							llamadaFirma(3,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
 					}
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -246,7 +272,11 @@ public class NotarioDigital extends JFrame {
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					if (panelFirma.getFirmaDeseada()) {
-						llamadaFirma(5);
+						try {
+							llamadaFirma(5,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
 					}
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -258,17 +288,32 @@ public class NotarioDigital extends JFrame {
 
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				llamadaFirma(2);
+				try {
+					llamadaFirma(2,100,100,400,250);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				revalidate();
 			}
 		});
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				llamadaFirma(3);
+				try {
+					llamadaFirma(3,100,100,400,250);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				revalidate();
 			}
 		});
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				llamadaFirma(5);
+				try {
+					llamadaFirma(5,100,100,400,250);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				revalidate();
 			}
 		});
 
@@ -378,9 +423,71 @@ public class NotarioDigital extends JFrame {
 		}
 	}
 
-	public static void llamadaFirma(int nivelSeguridad) {
-		firmaDigital = new FirmaDigital(doc, nivelSeguridad, rutaPDF.getAbsolutePath(), visor);
+	public static void llamadaFirma(int nivelSeguridad, int x, int y, int width,int height) throws IOException {
+		firmaDigital = new FirmaDigital(nivelSeguridad);
+		new ImagenFirma("David García Diez",nivelSeguridad,width,height);
+		String archivo_output = rutaPDF.getAbsolutePath().substring(0,rutaPDF.getAbsolutePath().lastIndexOf("."));
+		archivo_output = archivo_output + "_firmado.pdf";
+		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
+			byte[] codigoFirma = firmaDigital.codigoFirma();
+			// Creamos el elemento visual de firma
+			PDVisibleSignDesigner visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), visor.getController().getCurrentPageNumber() + 1);
+			visibleSignDesigner.xAxis(x).yAxis(y).zoom(0).adjustForRotation();
+			// Propiedades de la firma
+			PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
+			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
+					.signatureReason("Firma con Dilithium").preferredSize(50).page(visor.getController().getCurrentPageNumber()).visualSignEnabled(true)
+					.setPdVisibleSignature(visibleSignDesigner);
+
+			int accessPermissions = SigUtils.getMDPPermission(doc);
+			if (accessPermissions == 1) {
+				throw new IllegalStateException(
+						"No changes to the document are permitted due to DocMDP transform parameters dictionary");
+			}
+			PDSignature signature = new PDSignature();
+			if (doc.getVersion() >= 1.5f && accessPermissions == 0) {
+				SigUtils.setMDPPermission(doc, signature, 2);
+			}
+			PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
+			if (acroForm != null && acroForm.getNeedAppearances()) {
+				if (acroForm.getFields().isEmpty()) {
+					acroForm.getCOSObject().removeItem(COSName.NEED_APPEARANCES);
+				} else {
+					System.out.println("/NeedAppearances is set, signature may be ignored by Adobe Reader");
+				}
+			}
+
+			signature.setFilter(PDSignature.FILTER_ADOBE_PPKLITE);
+			signature.setSubFilter(PDSignature.SUBFILTER_ADBE_PKCS7_DETACHED);
+			visibleSignatureProperties.buildSignature();
+			signature.setName("David García Diez");
+			signature.setLocation("Universidad de León");
+			signature.setReason("Análisis de Algoritmos Post-Cuánticos");
+			signature.setSignDate(Calendar.getInstance());
+			SignatureInterface signatureInterface = new SignatureInterface() {
+
+				public byte[] sign(InputStream arg0) throws IOException {
+					return firmaDigital.getFirma();
+				}
+				
+			};
+
+			SignatureOptions signatureOptions = new SignatureOptions();
+			if (visibleSignatureProperties.isVisualSignEnabled()) {
+				
+				signatureOptions.setVisualSignature(visibleSignatureProperties.getVisibleSignature());
+				signatureOptions.setPage(visibleSignatureProperties.getPage() - 1);
+				signatureOptions.setPreferredSignatureSize(13000);
+				doc.addSignature(signature, signatureInterface, signatureOptions);
+			} else {
+				signatureOptions.setPreferredSignatureSize(13000);
+				doc.addSignature(signature, signatureInterface);
+			}
+			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
+			externalSigning.setSignature(codigoFirma);
+		}
 		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
+		
 	}
 	/**
 	 * Función para cargar un archivo arrastrado hacia la pantalla.
@@ -388,7 +495,8 @@ public class NotarioDigital extends JFrame {
 	 * @param rutaPDF La ruta del archivo que se arrastre hacia la pantalla
 	 */
 	public void abrirArchivoArrastrado(File ruta) {
-		remove(panel);
+		panel.removeAll();
+		panel.setBorder(null);
 		rutaPDF = ruta;
 		try {
 			// Cerrar el documento PDF anterior si está cargado
@@ -436,7 +544,8 @@ public class NotarioDigital extends JFrame {
 
             Transferable transferable = support.getTransferable();
             try {
-                java.util.List<File> fileList = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+                @SuppressWarnings("unchecked")
+				java.util.List<File> fileList = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
                 for (File file : fileList) {
                     if (file.getName().toLowerCase().endsWith(".pdf")) {
                         // Procesar el archivo PDF
