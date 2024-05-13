@@ -1,8 +1,0 @@
--JFrame para la verificación de la firma
--Panel para seleccionar coordenadas firma?
--Corregir problemas certificado (revocación, firmar con la hora del ordenador...)
--Arrastrar archivos
--Cuando se firma aparece que se ha modificado el documento
--Al abrir un documento firmado verificar no funciona;
-hay que recoger los datos de la firma de el pdf en vez de en la aplicacion
-documentViewController.getDocument().getSignatures()

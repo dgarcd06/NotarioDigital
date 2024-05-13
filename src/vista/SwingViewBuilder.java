@@ -41,9 +41,6 @@ import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 import org.icepdf.ri.common.views.PageViewDecorator;
 import org.icepdf.ri.common.widgets.annotations.AnnotationColorToggleButton;
 import org.icepdf.ri.common.widgets.annotations.IconAnnotationColorToggleButton;
-import vista.IconPack;
-import vista.Images;
-
 import org.icepdf.ri.util.MacOSAdapter;
 import org.icepdf.ri.util.ViewerPropertiesManager;
 

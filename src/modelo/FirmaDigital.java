@@ -213,7 +213,7 @@ public class FirmaDigital {
 		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
 			byte[] codigoFirma = codigoFirma();
 			// Creamos el elemento visual de firma
-			visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), 1);
+			visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), visorPDF.getController().getCurrentPageNumber() + 1);
 			visibleSignDesigner.xAxis(100).yAxis(100).zoom(0).adjustForRotation();
 			// Propiedades de la firma
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
@@ -323,7 +323,6 @@ public class FirmaDigital {
 	}
 
 	public static byte[] codigoFirma() throws IOException {
-		// cannot be done private (interface)
 		try {
 			CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
 			X509Certificate cert = generarCertificado();
@@ -342,7 +341,7 @@ public class FirmaDigital {
 			gen.addCertificates(new JcaCertStore(Arrays.asList(cert)));
 			CMSTypedData msg = new CMSProcessableByteArray(mensaje);
 			CMSSignedData signedData = gen.generate(msg, false);
-
+			
 			return signedData.getEncoded();
 		} catch (GeneralSecurityException | CMSException | OperatorCreationException e) {
 			throw new IOException(e);

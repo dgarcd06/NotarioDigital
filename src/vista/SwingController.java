@@ -2384,8 +2384,8 @@ public class SwingController extends ComponentAdapter
             if (extension != null) {
                 if (extension.equals(FileExtensionUtils.pdf)) {
                     if (viewer != null) {
-                        viewer.toFront();
-                        viewer.requestFocus();
+                        //viewer.toFront();
+                        //viewer.requestFocus();
                     }
                     openFileInSomeViewer(file);
                 } else {

@@ -1,8 +1,12 @@
 package controlador;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -10,12 +14,17 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 
+import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -29,8 +38,8 @@ import vista.FrameVisual;
 import vista.VisorPDF;
 
 /**
- * Frame principal de la aplicación.
- * Aquí se coordinan las funciones lógicas de Dilithium con el visor PDF.
+ * Frame principal de la aplicación. Aquí se coordinan las funciones lógicas de
+ * Dilithium con el visor PDF.
  */
 @SuppressWarnings("serial")
 public class NotarioDigital extends JFrame {
@@ -45,6 +54,7 @@ public class NotarioDigital extends JFrame {
 	private static FirmaDigital firmaDigital;
 	private static VisorPDF visor;
 	private final static String dir = System.getProperty("user.dir");
+	private JPanel panel;
 
 	public NotarioDigital() {
 		try {
@@ -54,13 +64,16 @@ public class NotarioDigital extends JFrame {
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
 			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 			this.setIconImage(Toolkit.getDefaultToolkit().getImage(dir + "\\recursos\\icono_jframe.png"));
-			/*
-			 * JLabel label = new JLabel("Arrastra un archivo aquí");
-			 * label.setPreferredSize(new Dimension(300, 200));
-			 * 
-			 * JPanel contentPane = new JPanel(new BorderLayout()); contentPane.add(label,
-			 * BorderLayout.CENTER); setContentPane(contentPane);
-			 */
+			
+			JLabel label = new JLabel("Arrastra un archivo aquí", SwingConstants.CENTER);
+			label.setPreferredSize(new Dimension(300, 200));
+			  
+			panel = new JPanel(new BorderLayout()); 
+			panel.setTransferHandler(new FileTransferHandler());
+			panel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+			panel.add(label,BorderLayout.CENTER); 
+			setContentPane(panel);
+			 
 
 			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
 			menu = new JMenuBar();
@@ -116,6 +129,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				// Si ya hay un pdf cargado SIN GUARDAR (pdf_cargado == 2 es que está
 				// modificado) hay que cerrarlo para abrir otro
+				remove(panel);	//El panel de arrastrar archivos
 				if (pdf_cargado == 2) {
 					int option = JOptionPane.showConfirmDialog(null,
 							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de cerrarlo?");
@@ -196,16 +210,44 @@ public class NotarioDigital extends JFrame {
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado == 1) {
-					/**
-					 * TODO Aqui se puede usar el objeto scene para pintar la firma Se usa el objeto
-					 * "controlador" que debe estar inicializado en "abrir" No debería haber error
-					 * porque sólo se ejecuta este código cuando se abre un pdf-> COMPROBAR!
-					 */
 
-					FrameVisual panel_firma = new
-					FrameVisual(getSize().width,getSize().height,dim.width / 2 - getSize().width
-					/ 2, dim.height / 2 - getSize().height / 2);
+					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+							getY() + 55);
+					if (panelFirma.getFirmaDeseada()) {
+						llamadaFirma(2);
+					}
+				} else {
+					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
 
+		});
+		visual3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (pdf_cargado == 1) {
+
+					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+							getY() + 55);
+					if (panelFirma.getFirmaDeseada()) {
+						llamadaFirma(3);
+					}
+				} else {
+					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+
+		});
+		visual5.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (pdf_cargado == 1) {
+
+					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+							getY() + 55);
+					if (panelFirma.getFirmaDeseada()) {
+						llamadaFirma(5);
+					}
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -270,7 +312,6 @@ public class NotarioDigital extends JFrame {
 		});
 
 		this.setJMenuBar(menu);
-		// TODO REVISAR
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				salir();
@@ -341,4 +382,77 @@ public class NotarioDigital extends JFrame {
 		firmaDigital = new FirmaDigital(doc, nivelSeguridad, rutaPDF.getAbsolutePath(), visor);
 		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
 	}
+	/**
+	 * Función para cargar un archivo arrastrado hacia la pantalla.
+	 * Similar a la funcionalidad del JMenuItem Abrir
+	 * @param rutaPDF La ruta del archivo que se arrastre hacia la pantalla
+	 */
+	public void abrirArchivoArrastrado(File ruta) {
+		remove(panel);
+		rutaPDF = ruta;
+		try {
+			// Cerrar el documento PDF anterior si está cargado
+			if (doc != null) {
+				doc.close();
+				visor.removeAll();
+			}
+
+			doc = PDDocument.load(rutaPDF);
+			if (doc != null) {
+				pdf_cargado = 1;
+			}
+
+			// Cargar el visor web
+			verificar.setEnabled(true);
+			firma_visual.setEnabled(true);
+			firma_rapida.setEnabled(true);
+			// Inicializar el controlador de Swing
+			visor = new VisorPDF(new SwingController(), rutaPDF);
+
+			// Agregar el componente de visualización al marco
+
+			getContentPane().add(visor, BorderLayout.CENTER);
+			visor.cargarPDF();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	
+	private class FileTransferHandler extends TransferHandler {
+        @Override
+        public boolean canImport(TransferSupport support) {
+            if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            Transferable transferable = support.getTransferable();
+            try {
+                java.util.List<File> fileList = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+                for (File file : fileList) {
+                    if (file.getName().toLowerCase().endsWith(".pdf")) {
+                        // Procesar el archivo PDF
+                        System.out.println("Ruta del archivo PDF: " + file.getAbsolutePath());
+                        abrirArchivoArrastrado(file);
+                        break;
+                    } else {
+                        // Mostrar un JOptionPane de error
+                        JOptionPane.showMessageDialog(null, "Error: Sólo pueden cargarse archivos PDF.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } catch (UnsupportedFlavorException | IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+            return true;
+        }
+    }
 }
