@@ -45,6 +45,7 @@ public class FrameVisual extends JFrame {
         });
         JOptionPane.showMessageDialog(this, "Selecciona el área donde desees crear la firma");
     }
+    
     public void cerrarFrame() {
         this.dispose();
     }
@@ -82,6 +83,9 @@ public class FrameVisual extends JFrame {
     	if(option == 0) {
     		firmaDeseada = true;
     		this.setVisible(false);
+    		synchronized (this) {
+                this.notifyAll();
+            }
     	}
     }
 }

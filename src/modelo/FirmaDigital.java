@@ -46,13 +46,13 @@ import org.bouncycastle.cert.jcajce.JcaCertStore;
 @SuppressWarnings("static-access")
 public class FirmaDigital {
 
-	private  AsymmetricCipherKeyPair parClaves;
-	private static int dilithiumMode;
-	private static byte[] mensaje;
-	private static byte[] firma;
+	private AsymmetricCipherKeyPair parClaves;
+	private int dilithiumMode;
+	private byte[] mensaje;
+	private byte[] firma;
 	private static PrivateKey sk;
 	private static PublicKey pk;
-	private static X509Certificate certificado;
+	private X509Certificate certificado;
 	/**
 	 * Para crear el objeto, se le pasa el archivo de PDF ¡¡¡¡REVISAR!!!! y el nivel
 	 * de seguridad de Dilithium para iniciar los parámetros
@@ -75,7 +75,7 @@ public class FirmaDigital {
 			new DilithiumKeyGenerationParameters(new SecureRandom(),
 					DilithiumParameters.dilithium2);
 		}
-		parClaves = generarParClaves();
+		parClaves = generarParClaves(this.dilithiumMode);
 		mensaje = "¡Dilithium!".getBytes();
 		try {
 			firmar((DilithiumPrivateKeyParameters) parClaves.getPrivate(), mensaje);
@@ -87,16 +87,16 @@ public class FirmaDigital {
 	public byte[] getFirma() {
 		return firma;
 	}
-	public AsymmetricKeyParameter getClavePublica() {
-		return this.parClaves.getPublic();
+	public PublicKey getClavePublica() {
+		return this.pk;
 	}
 
 	public X509Certificate getCertificado() {
 		return certificado;
 	}
-
-	public PrivateKey getPrivateKey() {
-		return sk;
+	
+	public int getDilithiumMode() {
+		return dilithiumMode;
 	}
 
 	/**
@@ -147,7 +147,7 @@ public class FirmaDigital {
 			return verifier.verifySignature(this.mensaje, this.firma);
 	}
 
-	public static AsymmetricCipherKeyPair generarParClaves() {
+	public static AsymmetricCipherKeyPair generarParClaves(int dilithiumMode) {
 		DilithiumKeyPairGenerator generator = new DilithiumKeyPairGenerator();
 		if(dilithiumMode == 5) {
 			generator.init(new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium5));
@@ -163,7 +163,7 @@ public class FirmaDigital {
 		return keyPair;
 	}
 
-	private static X509Certificate generarCertificado() throws OperatorCreationException, CertificateException,
+	private static X509Certificate generarCertificado(int dilithiumMode) throws OperatorCreationException, CertificateException,
 			IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
 
 		// Generar par de claves para Dilithium
@@ -214,10 +214,10 @@ public class FirmaDigital {
 		return cert;
 	}
 
-	public byte[] codigoFirma() throws IOException {
+	public byte[] codigoFirma(int dilithiumMode) throws IOException {
 		try {
 			CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
-			X509Certificate cert = generarCertificado();
+			X509Certificate cert = generarCertificado(dilithiumMode);
 			ContentSigner dilithiumSigner;
 			if (dilithiumMode == 5) {
 				dilithiumSigner = new JcaContentSignerBuilder("Dilithium5").build(sk);
@@ -226,7 +226,7 @@ public class FirmaDigital {
 			} else {
 				dilithiumSigner = new JcaContentSignerBuilder("Dilithium2").build(sk);
 			}
-
+			
 			gen.addSignerInfoGenerator(
 					new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().build())
 							.build(dilithiumSigner, cert));

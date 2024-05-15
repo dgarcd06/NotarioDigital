@@ -28,6 +28,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -47,6 +48,7 @@ import org.icepdf.ri.common.SwingController;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import modelo.FirmaDigital;
+import vista.FrameVerificacion;
 import vista.FrameVisual;
 import vista.ImagenFirma;
 import vista.VisorPDF;
@@ -69,6 +71,7 @@ public class NotarioDigital extends JFrame {
 	private static VisorPDF visor;
 	private final static String dir = System.getProperty("user.dir");
 	private JPanel panel;
+	private static String archivo_output;
 
 	public NotarioDigital() {
 		try {
@@ -157,6 +160,10 @@ public class NotarioDigital extends JFrame {
 											+ ex.getMessage(),
 									"Error", JOptionPane.ERROR_MESSAGE);
 						}
+					}else if(option == 1){
+						//TODO comprobar
+						File eliminarArchivo = new File(archivo_output);
+						eliminarArchivo.delete();
 					}
 				}
 
@@ -231,12 +238,34 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					//TODO Esperar a la seleccion del rectangulo. NO FUNCIONA ESPERA ACTIVA
-						try {
-							llamadaFirma(2,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
+					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+			            @Override
+			            protected Void doInBackground() throws Exception {
+			                synchronized (panelFirma) {
+			                    while (panelFirma.isVisible()) {
+			                        panelFirma.wait();
+			                    }
+			                }
+			                return null;
+			            }
+
+			            @Override
+			            protected void done() {
+			                if (panelFirma.getFirmaDeseada()) {
+			                    try {
+			                        llamadaFirma(2, panelFirma.getX(), panelFirma.getY(),
+			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                    } catch (IOException e1) {
+			                        e1.printStackTrace();
+			                    }
+			                } else {
+			                    System.out.println("El usuario no confirmó el área seleccionada.");
+			                }
+			            }
+			        };
+
+			        worker.execute();
 					
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -251,13 +280,35 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					if (panelFirma.getFirmaDeseada()) {
-						try {
-							llamadaFirma(3,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-					}
+					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+			            @Override
+			            protected Void doInBackground() throws Exception {
+			                synchronized (panelFirma) {
+			                    while (panelFirma.isVisible()) {
+			                        panelFirma.wait();
+			                    }
+			                }
+			                return null;
+			            }
+
+			            @Override
+			            protected void done() {
+			                if (panelFirma.getFirmaDeseada()) {
+			                    try {
+			                        llamadaFirma(3, panelFirma.getX(), panelFirma.getY(),
+			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                    } catch (IOException e1) {
+			                        e1.printStackTrace();
+			                    }
+			                } else {
+			                    System.out.println("El usuario no confirmó el área seleccionada.");
+			                }
+			            }
+			        };
+
+			        worker.execute();
+					
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -271,13 +322,35 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					if (panelFirma.getFirmaDeseada()) {
-						try {
-							llamadaFirma(5,panelFirma.getX(),panelFirma.getY(),panelFirma.getAncho(),panelFirma.getAlto());
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-					}
+					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+			            @Override
+			            protected Void doInBackground() throws Exception {
+			                synchronized (panelFirma) {
+			                    while (panelFirma.isVisible()) {
+			                        panelFirma.wait();
+			                    }
+			                }
+			                return null;
+			            }
+
+			            @Override
+			            protected void done() {
+			                if (panelFirma.getFirmaDeseada()) {
+			                    try {
+			                        llamadaFirma(5, panelFirma.getX(), panelFirma.getY(),
+			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                    } catch (IOException e1) {
+			                        e1.printStackTrace();
+			                    }
+			                } else {
+			                    System.out.println("El usuario no confirmó el área seleccionada.");
+			                }
+			            }
+			        };
+
+			        worker.execute();
+					
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -289,7 +362,7 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(2,100,100,400,250);
+					llamadaFirma(2,100,100,350,100);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -299,7 +372,7 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(3,100,100,400,250);
+					llamadaFirma(3,100,100,350,100);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -309,7 +382,7 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(5,100,100,400,250);
+					llamadaFirma(5,100,100,350,100);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -321,12 +394,7 @@ public class NotarioDigital extends JFrame {
 			// TODO
 			public void actionPerformed(ActionEvent e) {
 				if (pdf_cargado != 0) {
-					if (firmaDigital.verificar()) {
-						System.out.println("Firma verificada!!!");
-					} else {
-						System.out.println("Algo está mal");
-					}
-
+					FrameVerificacion verificacion = new FrameVerificacion();
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -426,17 +494,17 @@ public class NotarioDigital extends JFrame {
 	public static void llamadaFirma(int nivelSeguridad, int x, int y, int width,int height) throws IOException {
 		firmaDigital = new FirmaDigital(nivelSeguridad);
 		new ImagenFirma("David García Diez",nivelSeguridad,width,height);
-		String archivo_output = rutaPDF.getAbsolutePath().substring(0,rutaPDF.getAbsolutePath().lastIndexOf("."));
+		archivo_output = rutaPDF.getAbsolutePath().substring(0,rutaPDF.getAbsolutePath().lastIndexOf("."));
 		archivo_output = archivo_output + "_firmado.pdf";
 		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
-			byte[] codigoFirma = firmaDigital.codigoFirma();
+			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad);
 			// Creamos el elemento visual de firma
 			PDVisibleSignDesigner visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), visor.getController().getCurrentPageNumber() + 1);
 			visibleSignDesigner.xAxis(x).yAxis(y).zoom(0).adjustForRotation();
 			// Propiedades de la firma
 			PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
-					.signatureReason("Firma con Dilithium").preferredSize(50).page(visor.getController().getCurrentPageNumber()).visualSignEnabled(true)
+					.signatureReason("Firma con Dilithium").preferredSize(50).page(visor.getController().getCurrentPageNumber() + 1).visualSignEnabled(true)
 					.setPdVisibleSignature(visibleSignDesigner);
 
 			int accessPermissions = SigUtils.getMDPPermission(doc);
@@ -485,6 +553,7 @@ public class NotarioDigital extends JFrame {
 			}
 			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
 			externalSigning.setSignature(codigoFirma);
+			visor.setDocumento(new File(archivo_output));
 		}
 		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
 		
@@ -564,4 +633,7 @@ public class NotarioDigital extends JFrame {
             return true;
         }
     }
+	public int getPDFCargado(){
+		return pdf_cargado;
+	}
 }

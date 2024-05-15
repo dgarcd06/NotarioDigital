@@ -1,8 +1,13 @@
 package vista;
 
-import javax.swing.JFrame;
+import javax.swing.JDialog;
 
 @SuppressWarnings("serial")
-public class FrameVerificacion extends JFrame{
+public class FrameVerificacion extends JDialog{
 
+	public FrameVerificacion() {
+		this.setUndecorated(true);
+		
+		this.setVisible(true);
+	}
 }
