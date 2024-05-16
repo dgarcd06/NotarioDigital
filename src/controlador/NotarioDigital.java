@@ -61,10 +61,10 @@ import vista.VisorPDF;
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private JMenuBar menu; // Menú de opciones para la pantalla
-	private JMenu archivo, editar, ayuda, firma_visual, firma_rapida;
+	private JMenu archivo, editar, ayuda, firmaVisual, firmaRapida;
 	private JMenuItem abrir, guardar, salir, verificar, visual2, visual3, visual5, rapida2, rapida3, rapida5,
-			como_firmar, acerca_de;
-	private static int pdf_cargado = 0; // 0 = No cargado | 1 = Cargado | 2 = Modificado
+			comoFirmar, acercaDe;
+	private int pdfCargado = 0; // 0 = No cargado | 1 = Cargado | 2 = Modificado
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
 	private static FirmaDigital firmaDigital;
@@ -105,32 +105,32 @@ public class NotarioDigital extends JFrame {
 
 			editar = new JMenu("Editar");
 			verificar = new JMenuItem("Verificar");
-			firma_visual = new JMenu("Firma Visual");
-			firma_rapida = new JMenu("Firma Automática");
+			firmaVisual = new JMenu("Firma Visual");
+			firmaRapida = new JMenu("Firma Automática");
 			verificar.setEnabled(false);
-			firma_visual.setEnabled(false);
-			firma_rapida.setEnabled(false);
-			editar.add(firma_visual);
-			editar.add(firma_rapida);
+			firmaVisual.setEnabled(false);
+			firmaRapida.setEnabled(false);
+			editar.add(firmaVisual);
+			editar.add(firmaRapida);
 			editar.add(verificar);
 			visual2 = new JMenuItem("Dilithium 2");
-			firma_visual.add(visual2);
+			firmaVisual.add(visual2);
 			visual3 = new JMenuItem("Dilithium 3");
-			firma_visual.add(visual3);
+			firmaVisual.add(visual3);
 			visual5 = new JMenuItem("Dilithium 5");
-			firma_visual.add(visual5);
+			firmaVisual.add(visual5);
 			rapida2 = new JMenuItem("Dilithium 2");
-			firma_rapida.add(rapida2);
+			firmaRapida.add(rapida2);
 			rapida3 = new JMenuItem("Dilithium 3");
-			firma_rapida.add(rapida3);
+			firmaRapida.add(rapida3);
 			rapida5 = new JMenuItem("Dilithium 5");
-			firma_rapida.add(rapida5);
+			firmaRapida.add(rapida5);
 
 			ayuda = new JMenu("Ayuda");
-			como_firmar = new JMenuItem("Cómo Firmar");
-			acerca_de = new JMenuItem("Acerca De...");
-			ayuda.add(como_firmar);
-			ayuda.add(acerca_de);
+			comoFirmar = new JMenuItem("Cómo Firmar");
+			acercaDe = new JMenuItem("Acerca De...");
+			ayuda.add(comoFirmar);
+			ayuda.add(acercaDe);
 
 			menu.add(archivo);
 			menu.add(editar);
@@ -146,24 +146,22 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				// Si ya hay un pdf cargado SIN GUARDAR (pdf_cargado == 2 es que está
 				// modificado) hay que cerrarlo para abrir otro
-				
-				if (pdf_cargado == 2) {
+				Boolean borrar = false;
+				if (pdfCargado == 2) {
 					int option = JOptionPane.showConfirmDialog(null,
 							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de cerrarlo?");
-					if (option == 0) {
+					if (option == JOptionPane.YES_OPTION) {
 						try {
-							guardar();
-							pdf_cargado = 0;
+							guardar(pdfCargado);
+							setPDFCargado(0);
 						} catch (Exception ex) {
 							JOptionPane.showMessageDialog(null,
 									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
 											+ ex.getMessage(),
 									"Error", JOptionPane.ERROR_MESSAGE);
 						}
-					}else if(option == 1){
-						//TODO comprobar
-						File eliminarArchivo = new File(archivo_output);
-						eliminarArchivo.delete();
+					}else if(option == JOptionPane.NO_OPTION){
+						borrar = true;
 					}
 				}
 
@@ -181,25 +179,33 @@ public class NotarioDigital extends JFrame {
 							doc.close();
 							visor.removeAll();
 						}
-
 						doc = PDDocument.load(rutaPDF);
 						if (doc != null) {
-							pdf_cargado = 1;
+							pdfCargado = 1;
+							// Cargar el visor web
+							verificar.setEnabled(true);
+							firmaVisual.setEnabled(true);
+							firmaRapida.setEnabled(true);
+							// Inicializar el controlador de Swing
+							visor = new VisorPDF(new SwingController(), rutaPDF);
+
+							// Agregar el visor al Frame principal
+							getContentPane().add(visor, BorderLayout.CENTER);
+							visor.cargarPDF();
+							revalidate();
+							repaint();
+							//Si el PDF anterior estaba firmado (pdfCargado == 2) y no se quiere guardar se borra
+							if(borrar) {
+								File eliminarArchivo = new File(archivo_output);
+								if (eliminarArchivo.delete()) {
+					                System.out.println("El archivo ha sido eliminado exitosamente.");
+					            } else {
+					                System.out.println("No se pudo eliminar el archivo. Verifica que el archivo exista y que tengas los permisos necesarios.");
+					            }
+							}
 						}
 
-						// Cargar el visor web
-						verificar.setEnabled(true);
-						firma_visual.setEnabled(true);
-						firma_rapida.setEnabled(true);
-						// Inicializar el controlador de Swing
-						visor = new VisorPDF(new SwingController(), rutaPDF);
-
-						// Agregar el componente de visualización al marco
-
-						getContentPane().add(visor, BorderLayout.CENTER);
-						visor.cargarPDF();
-						revalidate();
-						repaint();
+						
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
@@ -209,12 +215,12 @@ public class NotarioDigital extends JFrame {
 
 		guardar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado == 0) {
+				if (pdfCargado == 0) {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF", "Guardar",
 							JOptionPane.INFORMATION_MESSAGE);
 				} else {
 					try {
-						guardar();
+						guardar(pdfCargado);
 					} catch (Exception ex) {
 						JOptionPane.showMessageDialog(null,
 								"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
@@ -227,14 +233,14 @@ public class NotarioDigital extends JFrame {
 
 		salir.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				salir();
+				salir(pdfCargado);
 			}
 		});
 
 		// ACCIONES DE EDITAR
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado == 1) {
+				if (pdfCargado == 1) {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -256,6 +262,7 @@ public class NotarioDigital extends JFrame {
 			                    try {
 			                        llamadaFirma(2, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
 			                        e1.printStackTrace();
 			                    }
@@ -276,7 +283,7 @@ public class NotarioDigital extends JFrame {
 		});
 		visual3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado == 1) {
+				if (pdfCargado == 1) {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -298,6 +305,7 @@ public class NotarioDigital extends JFrame {
 			                    try {
 			                        llamadaFirma(3, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
 			                        e1.printStackTrace();
 			                    }
@@ -318,7 +326,7 @@ public class NotarioDigital extends JFrame {
 		});
 		visual5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado == 1) {
+				if (pdfCargado == 1) {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -340,6 +348,7 @@ public class NotarioDigital extends JFrame {
 			                    try {
 			                        llamadaFirma(5, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
+			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
 			                        e1.printStackTrace();
 			                    }
@@ -363,6 +372,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					llamadaFirma(2,100,100,350,100);
+					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -373,6 +383,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					llamadaFirma(3,100,100,350,100);
+					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -383,6 +394,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					llamadaFirma(5,100,100,350,100);
+					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -393,7 +405,7 @@ public class NotarioDigital extends JFrame {
 		verificar.addActionListener(new ActionListener() {
 			// TODO
 			public void actionPerformed(ActionEvent e) {
-				if (pdf_cargado != 0) {
+				if (pdfCargado != 0) {
 					FrameVerificacion verificacion = new FrameVerificacion();
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
@@ -403,7 +415,7 @@ public class NotarioDigital extends JFrame {
 		});
 
 		// ACCIONES DE AYUDA
-		como_firmar.addActionListener(new ActionListener() {
+		comoFirmar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				// TODO Escribir texto Como firmar
 				JOptionPane.showMessageDialog(null,
@@ -413,7 +425,7 @@ public class NotarioDigital extends JFrame {
 			}
 		});
 
-		acerca_de.addActionListener(new ActionListener() {
+		acercaDe.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
 				// TODO Escribir texto Acerca De....
@@ -427,20 +439,30 @@ public class NotarioDigital extends JFrame {
 		this.setJMenuBar(menu);
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				salir();
+				salir(pdfCargado);
 			}
 		});
 
 	}
 
 	/**
+	 * Modifica el estado del PDF cargado
+	 * @param estadoPDF el estado en el que se quiere indicar al PDF
+	 * 0 = No hay ningún PDF cargado
+	 * 1 = Hay un PDF cargado
+	 * 2 = Hay un PDF cargado que ha sido firmado (modificado)
+	 */
+	public void setPDFCargado(int estadoPDF) {
+		this.pdfCargado = estadoPDF;
+	}
+	/**
 	 * Guarda cambios en un PDF. Escribe el PDF en la ruta indicada
 	 * 
 	 * @return 0 si se ha podido guardar correctamente, 1 si ha habido errores
 	 * @throws IOException
 	 */
-	public static int guardar() throws IOException {
-		if (pdf_cargado != 0) {
+	public static int guardar(int pdfCargado) throws IOException {
+		if (pdfCargado != 0) {
 			JFileChooser select_guardar = new JFileChooser();
 			select_guardar.setDialogTitle("Guardar");
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
@@ -450,7 +472,7 @@ public class NotarioDigital extends JFrame {
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File ruta = select_guardar.getSelectedFile();
 				doc.save(ruta);
-				pdf_cargado = 0;
+				pdfCargado = 0;
 				return 0;
 			} else {
 				return 1;
@@ -462,9 +484,9 @@ public class NotarioDigital extends JFrame {
 
 	}
 
-	public static void salir() {
+	public static void salir(int pdfCargado) {
 		// Si hay un PDF modificado sin guardar, se preguntará antes de salir
-		if (pdf_cargado == 2) {
+		if (pdfCargado == 2) {
 			int option = JOptionPane.showOptionDialog(null,
 					"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de salir?",
 					"Archivo Modificado", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null,
@@ -472,7 +494,7 @@ public class NotarioDigital extends JFrame {
 			switch (option) {
 			case JOptionPane.YES_OPTION:
 				try {
-					guardar();
+					guardar(pdfCargado);
 					System.exit(0);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -555,8 +577,6 @@ public class NotarioDigital extends JFrame {
 			externalSigning.setSignature(codigoFirma);
 			visor.setDocumento(new File(archivo_output));
 		}
-		pdf_cargado = 2; // Modificado(para que pregunte por guardar)
-		
 	}
 	/**
 	 * Función para cargar un archivo arrastrado hacia la pantalla.
@@ -576,13 +596,13 @@ public class NotarioDigital extends JFrame {
 
 			doc = PDDocument.load(rutaPDF);
 			if (doc != null) {
-				pdf_cargado = 1;
+				pdfCargado = 1;
 			}
 
 			// Cargar el visor web
 			verificar.setEnabled(true);
-			firma_visual.setEnabled(true);
-			firma_rapida.setEnabled(true);
+			firmaVisual.setEnabled(true);
+			firmaRapida.setEnabled(true);
 			// Inicializar el controlador de Swing
 			visor = new VisorPDF(new SwingController(), rutaPDF);
 
@@ -634,6 +654,6 @@ public class NotarioDigital extends JFrame {
         }
     }
 	public int getPDFCargado(){
-		return pdf_cargado;
+		return pdfCargado;
 	}
 }

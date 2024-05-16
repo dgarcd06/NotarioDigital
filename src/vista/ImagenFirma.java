@@ -27,7 +27,7 @@ public class ImagenFirma {
 		graphics.setFont(fuente_texto);
 		graphics.setColor(Color.BLACK);
 		graphics.drawString("FIRMA DIGITAL CON DILITHIUM", 0, altura/5);
-		graphics.drawString("Nombre: " + nombre, 0, (altura/5)*2);
+		graphics.drawString("Autor:" + nombre, 0, (altura/5)*2);
 		if (nivelSeguridad == 5) {
 			graphics.drawString("Algoritmo:" + "Dilitium5", 0, (altura/5)*3);
 		} else if (nivelSeguridad == 3) {
