@@ -23,7 +23,12 @@ public class ImagenFirma {
 		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		graphics.setBackground(new Color(242,242,242));
 		graphics.fillRect(0, 0, anchura, altura);
-		Font fuente_texto = new Font("Arial", Font.BOLD, altura/6);
+		Font fuente_texto;
+		if(altura > 150) {
+			fuente_texto = new Font("Arial", Font.BOLD, altura/10);
+		}else {
+			fuente_texto = new Font("Arial", Font.BOLD, altura/6);
+		}
 		graphics.setFont(fuente_texto);
 		graphics.setColor(Color.BLACK);
 		graphics.drawString("FIRMA DIGITAL CON DILITHIUM", 0, altura/5);

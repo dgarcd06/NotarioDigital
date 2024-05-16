@@ -43,6 +43,7 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.icepdf.ri.common.SwingController;
 
 import com.formdev.flatlaf.FlatLightLaf;
@@ -241,7 +242,7 @@ public class NotarioDigital extends JFrame {
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
-
+					
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					//SwingWorker para esperar a la asincronía de la selección del área para firmar
@@ -260,7 +261,7 @@ public class NotarioDigital extends JFrame {
 			            protected void done() {
 			                if (panelFirma.getFirmaDeseada()) {
 			                    try {
-			                        llamadaFirma(2, panelFirma.getX(), panelFirma.getY(),
+			                        firmaDocumento(2, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
 			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
@@ -303,7 +304,7 @@ public class NotarioDigital extends JFrame {
 			            protected void done() {
 			                if (panelFirma.getFirmaDeseada()) {
 			                    try {
-			                        llamadaFirma(3, panelFirma.getX(), panelFirma.getY(),
+			                        firmaDocumento(3, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
 			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
@@ -341,12 +342,11 @@ public class NotarioDigital extends JFrame {
 			                }
 			                return null;
 			            }
-
 			            @Override
 			            protected void done() {
 			                if (panelFirma.getFirmaDeseada()) {
 			                    try {
-			                        llamadaFirma(5, panelFirma.getX(), panelFirma.getY(),
+			                        firmaDocumento(5, panelFirma.getX(), panelFirma.getY(),
 			                                panelFirma.getAncho(), panelFirma.getAlto());
 			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
 			                    } catch (IOException e1) {
@@ -371,7 +371,7 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(2,100,100,350,100);
+					firmaDocumento(2,100,100,350,100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -382,7 +382,7 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(3,100,100,350,100);
+					firmaDocumento(3,100,100,350,100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -393,7 +393,7 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					llamadaFirma(5,100,100,350,100);
+					firmaDocumento(5,100,100,350,100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -513,16 +513,18 @@ public class NotarioDigital extends JFrame {
 		}
 	}
 
-	public static void llamadaFirma(int nivelSeguridad, int x, int y, int width,int height) throws IOException {
+	public static void firmaDocumento(int nivelSeguridad, int x, int y, int width,int height) throws IOException {
 		firmaDigital = new FirmaDigital(nivelSeguridad);
 		new ImagenFirma("David García Diez",nivelSeguridad,width,height);
 		archivo_output = rutaPDF.getAbsolutePath().substring(0,rutaPDF.getAbsolutePath().lastIndexOf("."));
 		archivo_output = archivo_output + "_firmado.pdf";
 		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
-			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad);
+			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad);	//El código CMS de la firma digital
+			
 			// Creamos el elemento visual de firma
 			PDVisibleSignDesigner visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), visor.getController().getCurrentPageNumber() + 1);
 			visibleSignDesigner.xAxis(x).yAxis(y).zoom(0).adjustForRotation();
+			
 			// Propiedades de la firma
 			PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
@@ -656,4 +658,29 @@ public class NotarioDigital extends JFrame {
 	public int getPDFCargado(){
 		return pdfCargado;
 	}
+	private PDSignature buscarFirmaDocumento(PDDocument doc, String sigFieldName)
+    {
+        PDSignature signature = null;
+        PDSignatureField signatureField;
+        PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
+        if (acroForm != null)
+        {
+            signatureField = (PDSignatureField) acroForm.getField(sigFieldName);
+            if (signatureField != null)
+            {
+                // retrieve signature dictionary
+                signature = signatureField.getSignature();
+                if (signature == null)
+                {
+                    signature = new PDSignature();
+                    signatureField.getCOSObject().setItem(COSName.V, signature);
+                }
+                else
+                {
+                    throw new IllegalStateException("The signature field " + sigFieldName + " is already signed.");
+                }
+            }
+        }
+        return signature;
+    }
 }
