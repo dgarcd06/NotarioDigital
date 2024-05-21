@@ -15,6 +15,7 @@
  */
 package vista;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.graphics.images.references.ImageReference;
 import org.icepdf.core.pobjects.graphics.images.references.ImageReferenceFactory;
@@ -46,6 +47,7 @@ import org.icepdf.ri.util.ViewerPropertiesManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.security.Security;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -311,7 +313,9 @@ public class SwingViewBuilder implements ViewBuilder {
     protected static ViewerPropertiesManager propertiesManager;
 
     protected static final boolean isMacOs;
-
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
     static {
         isMacOs = SystemProperties.OS_NAME.contains("OS X");
     }

@@ -15,6 +15,7 @@
  */
 package vista;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.icepdf.core.SecurityCallback;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.io.SizeInputStream;
@@ -93,6 +94,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.Security;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -128,9 +130,12 @@ public class SwingController extends ComponentAdapter
         implements org.icepdf.ri.common.views.Controller, ActionListener, FocusListener, ItemListener,
         TreeSelectionListener, WindowListener, DropTargetListener,
         PropertyChangeListener {
-
+	
     protected static final Logger logger =
             Logger.getLogger(SwingController.class.toString());
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     private static final boolean USE_JFILECHOOSER;
 

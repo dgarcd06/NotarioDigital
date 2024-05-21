@@ -11,12 +11,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Security;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Calendar;
+import java.util.Collection;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
@@ -43,7 +48,20 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSigProperties;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleSignDesigner;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerInformation;
+import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.SignerInformationVerifier;
+import org.bouncycastle.cms.jcajce.JcaSignerInfoVerifierBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentVerifierProvider;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
+import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
+import org.bouncycastle.util.Store;
 import org.icepdf.ri.common.SwingController;
 
 import com.formdev.flatlaf.FlatLightLaf;
@@ -73,25 +91,28 @@ public class NotarioDigital extends JFrame {
 	private final static String dir = System.getProperty("user.dir");
 	private JPanel panel;
 	private static String archivo_output;
+	static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
 	public NotarioDigital() {
+		Security.addProvider(new BouncyCastlePQCProvider());
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
 			this.setTitle("Notario Digital");
 			this.setSize(650, 500);
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
-			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			this.setIconImage(Toolkit.getDefaultToolkit().getImage(dir + "\\recursos\\icono_jframe.png"));
-			
+
 			JLabel label = new JLabel("Arrastra un archivo aquí", SwingConstants.CENTER);
 			label.setPreferredSize(new Dimension(300, 200));
-			  
-			panel = new JPanel(new BorderLayout()); 
+
+			panel = new JPanel(new BorderLayout());
 			panel.setTransferHandler(new FileTransferHandler());
 			panel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-			panel.add(label,BorderLayout.CENTER); 
+			panel.add(label, BorderLayout.CENTER);
 			setContentPane(panel);
-			 
 
 			/* CODIGO SOBRE EL MENÚ Y SUS OPCIONES */
 			menu = new JMenuBar();
@@ -161,7 +182,7 @@ public class NotarioDigital extends JFrame {
 											+ ex.getMessage(),
 									"Error", JOptionPane.ERROR_MESSAGE);
 						}
-					}else if(option == JOptionPane.NO_OPTION){
+					} else if (option == JOptionPane.NO_OPTION) {
 						borrar = true;
 					}
 				}
@@ -171,7 +192,7 @@ public class NotarioDigital extends JFrame {
 				selector.setFileFilter(filter);
 				int result = selector.showOpenDialog(null);
 				if (result == JFileChooser.APPROVE_OPTION) {
-					panel.removeAll();	//El panel de arrastrar archivos
+					panel.removeAll(); // El panel de arrastrar archivos
 					panel.setBorder(null);
 					rutaPDF = selector.getSelectedFile();
 					try {
@@ -195,18 +216,19 @@ public class NotarioDigital extends JFrame {
 							visor.cargarPDF();
 							revalidate();
 							repaint();
-							//Si el PDF anterior estaba firmado (pdfCargado == 2) y no se quiere guardar se borra
-							if(borrar) {
+							// Si el PDF anterior estaba firmado (pdfCargado == 2) y no se quiere guardar se
+							// borra
+							if (borrar) {
 								File eliminarArchivo = new File(archivo_output);
 								if (eliminarArchivo.delete()) {
-					                System.out.println("El archivo ha sido eliminado exitosamente.");
-					            } else {
-					                System.out.println("No se pudo eliminar el archivo. Verifica que el archivo exista y que tengas los permisos necesarios.");
-					            }
+									System.out.println("El archivo ha sido eliminado exitosamente.");
+								} else {
+									System.out.println(
+											"No se pudo eliminar el archivo. Verifica que el archivo exista y que tengas los permisos necesarios.");
+								}
 							}
 						}
 
-						
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
@@ -234,7 +256,7 @@ public class NotarioDigital extends JFrame {
 
 		salir.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				salir(pdfCargado);
+				System.exit(0);
 			}
 		});
 
@@ -242,39 +264,39 @@ public class NotarioDigital extends JFrame {
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
-					
+
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-			            @Override
-			            protected Void doInBackground() throws Exception {
-			                synchronized (panelFirma) {
-			                    while (panelFirma.isVisible()) {
-			                        panelFirma.wait();
-			                    }
-			                }
-			                return null;
-			            }
+						@Override
+						protected Void doInBackground() throws Exception {
+							synchronized (panelFirma) {
+								while (panelFirma.isVisible()) {
+									panelFirma.wait();
+								}
+							}
+							return null;
+						}
 
-			            @Override
-			            protected void done() {
-			                if (panelFirma.getFirmaDeseada()) {
-			                    try {
-			                        firmaDocumento(2, panelFirma.getX(), panelFirma.getY(),
-			                                panelFirma.getAncho(), panelFirma.getAlto());
-			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
-			                    } catch (IOException e1) {
-			                        e1.printStackTrace();
-			                    }
-			                } else {
-			                    System.out.println("El usuario no confirmó el área seleccionada.");
-			                }
-			            }
-			        };
+						@Override
+						protected void done() {
+							if (panelFirma.getFirmaDeseada()) {
+								try {
+									firmaDocumento(2, panelFirma.getX(), panelFirma.getY(), panelFirma.getAncho(),
+											panelFirma.getAlto());
+									setPDFCargado(2); // Modificado(para que pregunte por guardar)
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							} else {
+								System.out.println("El usuario no confirmó el área seleccionada.");
+							}
+						}
+					};
 
-			        worker.execute();
-					
+					worker.execute();
+
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -288,36 +310,36 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-			            @Override
-			            protected Void doInBackground() throws Exception {
-			                synchronized (panelFirma) {
-			                    while (panelFirma.isVisible()) {
-			                        panelFirma.wait();
-			                    }
-			                }
-			                return null;
-			            }
+						@Override
+						protected Void doInBackground() throws Exception {
+							synchronized (panelFirma) {
+								while (panelFirma.isVisible()) {
+									panelFirma.wait();
+								}
+							}
+							return null;
+						}
 
-			            @Override
-			            protected void done() {
-			                if (panelFirma.getFirmaDeseada()) {
-			                    try {
-			                        firmaDocumento(3, panelFirma.getX(), panelFirma.getY(),
-			                                panelFirma.getAncho(), panelFirma.getAlto());
-			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
-			                    } catch (IOException e1) {
-			                        e1.printStackTrace();
-			                    }
-			                } else {
-			                    System.out.println("El usuario no confirmó el área seleccionada.");
-			                }
-			            }
-			        };
+						@Override
+						protected void done() {
+							if (panelFirma.getFirmaDeseada()) {
+								try {
+									firmaDocumento(3, panelFirma.getX(), panelFirma.getY(), panelFirma.getAncho(),
+											panelFirma.getAlto());
+									setPDFCargado(2); // Modificado(para que pregunte por guardar)
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							} else {
+								System.out.println("El usuario no confirmó el área seleccionada.");
+							}
+						}
+					};
 
-			        worker.execute();
-					
+					worker.execute();
+
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -331,35 +353,36 @@ public class NotarioDigital extends JFrame {
 
 					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
-					//SwingWorker para esperar a la asincronía de la selección del área para firmar
+					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-			            @Override
-			            protected Void doInBackground() throws Exception {
-			                synchronized (panelFirma) {
-			                    while (panelFirma.isVisible()) {
-			                        panelFirma.wait();
-			                    }
-			                }
-			                return null;
-			            }
-			            @Override
-			            protected void done() {
-			                if (panelFirma.getFirmaDeseada()) {
-			                    try {
-			                        firmaDocumento(5, panelFirma.getX(), panelFirma.getY(),
-			                                panelFirma.getAncho(), panelFirma.getAlto());
-			                        setPDFCargado(2); // Modificado(para que pregunte por guardar)
-			                    } catch (IOException e1) {
-			                        e1.printStackTrace();
-			                    }
-			                } else {
-			                    System.out.println("El usuario no confirmó el área seleccionada.");
-			                }
-			            }
-			        };
+						@Override
+						protected Void doInBackground() throws Exception {
+							synchronized (panelFirma) {
+								while (panelFirma.isVisible()) {
+									panelFirma.wait();
+								}
+							}
+							return null;
+						}
 
-			        worker.execute();
-					
+						@Override
+						protected void done() {
+							if (panelFirma.getFirmaDeseada()) {
+								try {
+									firmaDocumento(5, panelFirma.getX(), panelFirma.getY(), panelFirma.getAncho(),
+											panelFirma.getAlto());
+									setPDFCargado(2); // Modificado(para que pregunte por guardar)
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							} else {
+								System.out.println("El usuario no confirmó el área seleccionada.");
+							}
+						}
+					};
+
+					worker.execute();
+
 				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
@@ -371,7 +394,7 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(2,100,100,350,100);
+					firmaDocumento(2, 100, 100, 350, 100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -382,7 +405,7 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(3,100,100,350,100);
+					firmaDocumento(3, 100, 100, 350, 100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -393,7 +416,7 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(5,100,100,350,100);
+					firmaDocumento(5, 100, 100, 350, 100);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -405,9 +428,36 @@ public class NotarioDigital extends JFrame {
 		verificar.addActionListener(new ActionListener() {
 			// TODO
 			public void actionPerformed(ActionEvent e) {
-				if (pdfCargado != 0) {
-					FrameVerificacion verificacion = new FrameVerificacion();
-				} else {
+				PDSignature firmaDocumento;
+				if (pdfCargado == 1) {
+						//Se busca firma en el documento. Si no hay, no se puede verificar
+						//La verificacion se hace en la clase FirmaDigital
+						//Después se crea un frame con la información de la verificación
+						try {
+							firmaDocumento = buscarFirmaDocumento(doc);
+							if(firmaDocumento != null) {
+								FirmaDigital verificador = new FirmaDigital();
+								Boolean firmaVerificada = verificador.verificarFirmaDocumento(doc, firmaDocumento);
+								new FrameVerificacion(firmaVerificada,verificador.getFirma(),firmaDocumento.getContents(),verificador.getCertificado());
+							}else {
+								JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
+										JOptionPane.ERROR_MESSAGE);
+							}
+							
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+						
+				}else if(pdfCargado == 2) { 
+					//Si se acaba de firmar, recoger los datos directamente del objeto FirmaDigital
+					
+					try {
+						Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc, doc.getLastSignatureDictionary());
+						new FrameVerificacion(firmaVerificada,firmaDigital.getFirma(),doc.getLastSignatureDictionary().getContents(),firmaDigital.getCertificado());
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
@@ -437,24 +487,20 @@ public class NotarioDigital extends JFrame {
 		});
 
 		this.setJMenuBar(menu);
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				salir(pdfCargado);
-			}
-		});
 
 	}
 
 	/**
 	 * Modifica el estado del PDF cargado
-	 * @param estadoPDF el estado en el que se quiere indicar al PDF
-	 * 0 = No hay ningún PDF cargado
-	 * 1 = Hay un PDF cargado
-	 * 2 = Hay un PDF cargado que ha sido firmado (modificado)
+	 * 
+	 * @param estadoPDF el estado en el que se quiere indicar al PDF 0 = No hay
+	 *                  ningún PDF cargado 1 = Hay un PDF cargado 2 = Hay un PDF
+	 *                  cargado que ha sido firmado (modificado)
 	 */
 	public void setPDFCargado(int estadoPDF) {
 		this.pdfCargado = estadoPDF;
 	}
+
 	/**
 	 * Guarda cambios en un PDF. Escribe el PDF en la ruta indicada
 	 * 
@@ -484,51 +530,25 @@ public class NotarioDigital extends JFrame {
 
 	}
 
-	public static void salir(int pdfCargado) {
-		// Si hay un PDF modificado sin guardar, se preguntará antes de salir
-		if (pdfCargado == 2) {
-			int option = JOptionPane.showOptionDialog(null,
-					"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de salir?",
-					"Archivo Modificado", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null,
-					new String[] { "Guardar", "No Guardar", "Cancelar" }, "Guardar");
-			switch (option) {
-			case JOptionPane.YES_OPTION:
-				try {
-					guardar(pdfCargado);
-					System.exit(0);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				break;
-			case JOptionPane.NO_OPTION:
-				System.exit(0);
-				break;
-			case JOptionPane.CANCEL_OPTION:
-				break;
-			case JOptionPane.CLOSED_OPTION:
-				break;
-			}
-		} else {
-			System.exit(0);
-		}
-	}
-
-	public static void firmaDocumento(int nivelSeguridad, int x, int y, int width,int height) throws IOException {
+	public static void firmaDocumento(int nivelSeguridad, int x, int y, int width, int height) throws IOException {
 		firmaDigital = new FirmaDigital(nivelSeguridad);
-		new ImagenFirma("David García Diez",nivelSeguridad,width,height);
-		archivo_output = rutaPDF.getAbsolutePath().substring(0,rutaPDF.getAbsolutePath().lastIndexOf("."));
+		new ImagenFirma("David García Diez", nivelSeguridad, width, height);
+		archivo_output = rutaPDF.getAbsolutePath().substring(0, rutaPDF.getAbsolutePath().lastIndexOf("."));
 		archivo_output = archivo_output + "_firmado.pdf";
-		try(FileOutputStream archivoOutput = new FileOutputStream(archivo_output)){
-			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad);	//El código CMS de la firma digital
-			
+		try (FileOutputStream archivoOutput = new FileOutputStream(archivo_output)) {
+			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad); // El código CMS de la firma digital
+
 			// Creamos el elemento visual de firma
-			PDVisibleSignDesigner visibleSignDesigner = new PDVisibleSignDesigner(doc, new FileInputStream(dir + "\\recursos\\firma.png"), visor.getController().getCurrentPageNumber() + 1);
+			PDVisibleSignDesigner visibleSignDesigner = new PDVisibleSignDesigner(doc,
+					new FileInputStream(dir + "\\recursos\\firma.png"),
+					visor.getController().getCurrentPageNumber() + 1);
 			visibleSignDesigner.xAxis(x).yAxis(y).zoom(0).adjustForRotation();
-			
+
 			// Propiedades de la firma
 			PDVisibleSigProperties visibleSignatureProperties = new PDVisibleSigProperties();
 			visibleSignatureProperties.signerName("David García Diez").signerLocation("Universidad de León")
-					.signatureReason("Firma con Dilithium").preferredSize(50).page(visor.getController().getCurrentPageNumber() + 1).visualSignEnabled(true)
+					.signatureReason("Firma con Dilithium").preferredSize(50)
+					.page(visor.getController().getCurrentPageNumber() + 1).visualSignEnabled(true)
 					.setPdVisibleSignature(visibleSignDesigner);
 
 			int accessPermissions = SigUtils.getMDPPermission(doc);
@@ -556,17 +576,17 @@ public class NotarioDigital extends JFrame {
 			signature.setLocation("Universidad de León");
 			signature.setReason("Análisis de Algoritmos Post-Cuánticos");
 			signature.setSignDate(Calendar.getInstance());
+			signature.setContents(firmaDigital.getClavePublica().getEncoded());
 			SignatureInterface signatureInterface = new SignatureInterface() {
 
 				public byte[] sign(InputStream arg0) throws IOException {
 					return firmaDigital.getFirma();
 				}
-				
 			};
 
 			SignatureOptions signatureOptions = new SignatureOptions();
 			if (visibleSignatureProperties.isVisualSignEnabled()) {
-				
+
 				signatureOptions.setVisualSignature(visibleSignatureProperties.getVisibleSignature());
 				signatureOptions.setPage(visibleSignatureProperties.getPage() - 1);
 				signatureOptions.setPreferredSignatureSize(13000);
@@ -577,12 +597,17 @@ public class NotarioDigital extends JFrame {
 			}
 			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
 			externalSigning.setSignature(codigoFirma);
-			visor.setDocumento(new File(archivo_output));
+			doc.close();
+			File docFirmado = new File(archivo_output);
+			doc = PDDocument.load(docFirmado);
+			visor.setDocumento(docFirmado);
 		}
 	}
+
 	/**
-	 * Función para cargar un archivo arrastrado hacia la pantalla.
-	 * Similar a la funcionalidad del JMenuItem Abrir
+	 * Función para cargar un archivo arrastrado hacia la pantalla. Similar a la
+	 * funcionalidad del JMenuItem Abrir
+	 * 
 	 * @param rutaPDF La ruta del archivo que se arrastre hacia la pantalla
 	 */
 	public void abrirArchivoArrastrado(File ruta) {
@@ -616,71 +641,66 @@ public class NotarioDigital extends JFrame {
 			ex.printStackTrace();
 		}
 	}
-	
-	
+
 	private class FileTransferHandler extends TransferHandler {
-        @Override
-        public boolean canImport(TransferSupport support) {
-            if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                return false;
-            }
-            return true;
-        }
+		@Override
+		public boolean canImport(TransferSupport support) {
+			if (!support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+				return false;
+			}
+			return true;
+		}
 
-        @Override
-        public boolean importData(TransferSupport support) {
-            if (!canImport(support)) {
-                return false;
-            }
+		@Override
+		public boolean importData(TransferSupport support) {
+			if (!canImport(support)) {
+				return false;
+			}
 
-            Transferable transferable = support.getTransferable();
-            try {
-                @SuppressWarnings("unchecked")
-				java.util.List<File> fileList = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-                for (File file : fileList) {
-                    if (file.getName().toLowerCase().endsWith(".pdf")) {
-                        // Procesar el archivo PDF
-                        System.out.println("Ruta del archivo PDF: " + file.getAbsolutePath());
-                        abrirArchivoArrastrado(file);
-                        break;
-                    } else {
-                        // Mostrar un JOptionPane de error
-                        JOptionPane.showMessageDialog(null, "Error: Sólo pueden cargarse archivos PDF.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            } catch (UnsupportedFlavorException | IOException e) {
-                e.printStackTrace();
-                return false;
-            }
-            return true;
-        }
-    }
-	public int getPDFCargado(){
+			Transferable transferable = support.getTransferable();
+			try {
+				@SuppressWarnings("unchecked")
+				java.util.List<File> fileList = (java.util.List<File>) transferable
+						.getTransferData(DataFlavor.javaFileListFlavor);
+				for (File file : fileList) {
+					if (file.getName().toLowerCase().endsWith(".pdf")) {
+						// Procesar el archivo PDF
+						System.out.println("Ruta del archivo PDF: " + file.getAbsolutePath());
+						abrirArchivoArrastrado(file);
+						break;
+					} else {
+						// Mostrar un JOptionPane de error
+						JOptionPane.showMessageDialog(null, "Error: Sólo pueden cargarse archivos PDF.", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
+				}
+			} catch (UnsupportedFlavorException | IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public int getPDFCargado() {
 		return pdfCargado;
 	}
-	private PDSignature buscarFirmaDocumento(PDDocument doc, String sigFieldName)
-    {
-        PDSignature signature = null;
-        PDSignatureField signatureField;
-        PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
-        if (acroForm != null)
-        {
-            signatureField = (PDSignatureField) acroForm.getField(sigFieldName);
-            if (signatureField != null)
-            {
-                // retrieve signature dictionary
-                signature = signatureField.getSignature();
-                if (signature == null)
-                {
-                    signature = new PDSignature();
-                    signatureField.getCOSObject().setItem(COSName.V, signature);
-                }
-                else
-                {
-                    throw new IllegalStateException("The signature field " + sigFieldName + " is already signed.");
-                }
-            }
-        }
-        return signature;
-    }
+
+	private PDSignature buscarFirmaDocumento(PDDocument doc) throws IOException {
+		PDSignature signature = null;
+		PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
+
+		if (acroForm == null)
+			return null;
+		for (PDField field : acroForm.getFields()) {
+			if (field instanceof PDSignatureField) {
+				PDSignatureField signatureField = (PDSignatureField) field;
+				signature = signatureField.getSignature();
+				if (signature != null) {
+					return signature;
+				}
+			}
+		}
+		return null;
+	}
 }

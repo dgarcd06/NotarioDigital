@@ -12,10 +12,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/bcpkix-jdk18on-1.76.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/bcprov-ext-jdk18on-1.76.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/bcprov-jdk18on-1.76.jar"/>
-	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/bcutil-jdk18on-1.76.jar"/>
 	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/common-image-3.9.4.jar"/>
 	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/common-io-3.9.4.jar"/>
 	<classpathentry kind="lib" path="C:/Users/David/eclipse-workspace/NotarioDigital/lib/icepdf/common-lang-3.9.4.jar"/>
