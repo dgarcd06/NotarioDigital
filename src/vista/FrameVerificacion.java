@@ -29,7 +29,7 @@ public class FrameVerificacion extends JFrame {
     private JPanel panel = new JPanel();
 
     public FrameVerificacion(Boolean verificado, byte[] firma, byte[] clavePublica, X509Certificate certificado) {
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setUndecorated(false);
         this.setSize(500, 300);
         this.setLocation(dim.width / 2 - this.getSize().width / 3, dim.height / 4);

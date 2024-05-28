@@ -93,11 +93,10 @@ public class FirmaDigital {
 	}
 	private AsymmetricCipherKeyPair parClaves; // keypair compatible con Dilithium, no con Java
 	private int dilithiumMode;
-	private byte[] mensaje;
-	private byte[] firma;
+	private byte[] mensaje, firma;
 	private static PrivateKey sk;
-	private static PublicKey pk;
-	private static X509Certificate certificado;
+	private PublicKey pk;
+	private X509Certificate certificado;
 	private String algoritmoFirma; // Detecta el algoritmo de firma
 
 	/**
@@ -151,14 +150,6 @@ public class FirmaDigital {
 		return dilithiumMode;
 	}
 
-	public String getAlgoritmoFirma() {
-		return this.algoritmoFirma;
-	}
-
-	public void setAlgoritmoFirma(String algoritmo) {
-		this.algoritmoFirma = algoritmo;
-	}
-
 	/**
 	 * Metodo que genera un certificado con formato X509. Para ello genera un par de
 	 * claves de Dilithium compatibles con las librerías de seguridad de Java
@@ -196,7 +187,6 @@ public class FirmaDigital {
 			keyPairGenerator.initialize(DilithiumParameterSpec.dilithium2);
 		}
 		KeyPair keyPair = keyPairGenerator.generateKeyPair();
-		pk = keyPair.getPublic();
 		sk = keyPair.getPrivate();
 		SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
 
@@ -227,8 +217,8 @@ public class FirmaDigital {
 		}
 
 		X509CertificateHolder certHolder = certBuilder.build(signer);
-		certificado = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
-		return certificado;
+		
+		return new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
 	}
 
 	/**
@@ -249,6 +239,8 @@ public class FirmaDigital {
 		try {
 			CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
 			X509Certificate cert = generarCertificado(dilithiumMode);
+			this.certificado = cert;
+			this.pk = cert.getPublicKey();
 			ContentSigner dilithiumSigner;
 
 			String algorithm;
@@ -284,7 +276,7 @@ public class FirmaDigital {
 			CMSSignedData signedData = gen.generate(msg, true);
 			firma = signedData.getEncoded();
 			return signedData.getEncoded();
-		} catch (GeneralSecurityException | CMSException | OperatorCreationException e) {
+		} catch (GeneralSecurityException | CMSException | OperatorCreationException | NullPointerException e) {
 			throw new IOException(e);
 		}
 	}
@@ -317,7 +309,7 @@ public class FirmaDigital {
 				}
 			}
 			return false;
-		} catch (IOException | CMSException | CertificateException | OperatorCreationException e) {
+		} catch (IOException | CMSException | CertificateException | OperatorCreationException | NullPointerException e) {
 			e.printStackTrace();
 			return false;
 		}

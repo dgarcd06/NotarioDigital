@@ -49,7 +49,6 @@ public class ImagenFirma {
 	            e.printStackTrace();
 	        }
 	        if (pngImage != null) {
-	        	//TODO Redimensionar la imagen según el tamaño de la firma
 	            int pngWidth = pngImage.getWidth();
 	            int pngHeight = pngImage.getHeight();
 	            int pngX = (anchura - pngWidth);

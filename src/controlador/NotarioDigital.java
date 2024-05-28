@@ -82,7 +82,7 @@ public class NotarioDigital extends JFrame {
 	private JMenuBar menu; // Menú de opciones para la pantalla
 	private JMenu archivo, editar, ayuda, firmaVisual, firmaRapida;
 	private JMenuItem abrir, guardar, salir, verificar, visual2, visual3, visual5, rapida2, rapida3, rapida5,
-			comoFirmar, acercaDe;
+			comoUsar, acercaDe;
 	private int pdfCargado = 0; // 0 = No cargado | 1 = Cargado | 2 = Modificado
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
 	private static PDDocument doc;
@@ -149,9 +149,9 @@ public class NotarioDigital extends JFrame {
 			firmaRapida.add(rapida5);
 
 			ayuda = new JMenu("Ayuda");
-			comoFirmar = new JMenuItem("Cómo Firmar");
+			comoUsar = new JMenuItem("Cómo Usar");
 			acercaDe = new JMenuItem("Acerca De...");
-			ayuda.add(comoFirmar);
+			ayuda.add(comoUsar);
 			ayuda.add(acercaDe);
 
 			menu.add(archivo);
@@ -426,7 +426,6 @@ public class NotarioDigital extends JFrame {
 		});
 
 		verificar.addActionListener(new ActionListener() {
-			// TODO
 			public void actionPerformed(ActionEvent e) {
 				PDSignature firmaDocumento;
 				if (pdfCargado == 1) {
@@ -449,8 +448,6 @@ public class NotarioDigital extends JFrame {
 						}
 						
 				}else if(pdfCargado == 2) { 
-					//Si se acaba de firmar, recoger los datos directamente del objeto FirmaDigital
-					
 					try {
 						Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc, doc.getLastSignatureDictionary());
 						new FrameVerificacion(firmaVerificada,firmaDigital.getFirma(),doc.getLastSignatureDictionary().getContents(),firmaDigital.getCertificado());
@@ -465,12 +462,15 @@ public class NotarioDigital extends JFrame {
 		});
 
 		// ACCIONES DE AYUDA
-		comoFirmar.addActionListener(new ActionListener() {
+		comoUsar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// TODO Escribir texto Como firmar
 				JOptionPane.showMessageDialog(null,
-						"Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.",
-						"Como firmar", JOptionPane.INFORMATION_MESSAGE);
+						  "Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.\n"
+						+ "Puede elegir entre Firma Automática, de manera que la firma se incluirá automáticamente en el documento, o bien seleccionar el área de firma con Firma Visual.\n"
+						+ "Si selecciona Firma Visual, confirme el área seleccionado para añadir la firma en el documento.\n"
+						+ "Dentro de las dos opciones, se puede seleccionar el nivel de seguridad de Dilithium, entre las opciones 2, 3 y 5.\n"
+						+ "Al pulsar Verificación, se buscará una firma en el documento. En el caso de existir la firma, se comprobará su veracidad a partir de la recogida de sus datos del documento.",
+						"Como usar la aplicación", JOptionPane.INFORMATION_MESSAGE);
 
 			}
 		});
@@ -478,9 +478,10 @@ public class NotarioDigital extends JFrame {
 		acercaDe.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-				// TODO Escribir texto Acerca De....
 				JOptionPane.showMessageDialog(null,
-						"Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales\ncon el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\".\nEsta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin\nde Grado en la Universidad de León.",
+						  "Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales con el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\".\n"
+						+ "Esta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin de Grado en la Universidad de León.\n"
+						+ "El desarrollo de la aplicación tiene fines de investigación; si bien su desarrollo cumple con la seguridad del algoritmo, el certificado digital es emitido por una autoridad de certificación. No se recomienda su uso profesional.",
 						"Acerca de...", JOptionPane.INFORMATION_MESSAGE);
 			}
 
@@ -508,7 +509,7 @@ public class NotarioDigital extends JFrame {
 	 * @throws IOException
 	 */
 	public static int guardar(int pdfCargado) throws IOException {
-		if (pdfCargado != 0) {
+		if (pdfCargado != 0 && doc != null) {
 			JFileChooser select_guardar = new JFileChooser();
 			select_guardar.setDialogTitle("Guardar");
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
@@ -685,8 +686,12 @@ public class NotarioDigital extends JFrame {
 	public int getPDFCargado() {
 		return pdfCargado;
 	}
+	
+	public PDDocument getDoc() {
+		return doc;
+	}
 
-	private PDSignature buscarFirmaDocumento(PDDocument doc) throws IOException {
+	public static PDSignature buscarFirmaDocumento(PDDocument doc) throws IOException {
 		PDSignature signature = null;
 		PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
 
