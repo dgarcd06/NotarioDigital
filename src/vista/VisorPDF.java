@@ -14,13 +14,21 @@ import org.icepdf.ri.common.SwingController;
 import vista.SwingViewBuilder;
 
 @SuppressWarnings("serial")
+/**
+ * La clase que carga la visualización del PDF.
+ * @author David García Diez
+ */
 public class VisorPDF extends JPanel {
 
 	private File rutaPDF;
 	private SwingController controller;
 	private SwingViewBuilder factory;
 	private JPanel panelPDF;
-
+	/**
+	 * Prepara la configuración del visor con el archivo que se le pasa
+	 * @param controller este objeto se encarga de configurar el comportamiento del visor PDF
+	 * @param documento El archivo que se va a abrir
+	 */
 	public VisorPDF(SwingController controller, File documento) {
 		try {
 			UIManager.setLookAndFeel(new FlatLightLaf());
@@ -39,27 +47,40 @@ public class VisorPDF extends JPanel {
 		setLayout(new BorderLayout());
 		this.add(panelPDF);
 	}
-
+	/**
+	 * Devuelve el controller
+	 * @return el SwingController
+	 */
 	public SwingController getController() {
 		return this.controller;
 	}
-
+	/**
+	 * Devuelve el SwingViewBuilder
+	 * @return SwingViewBuilder
+	 */
 	public SwingViewBuilder getFactory() {
 		return this.factory;
 	}
-
+	/**
+	 * Para modificar el archivo que carga el visor
+	 * @param rutaPDF el archivo que se va a cargar
+	 */
 	public void setDocumento(File rutaPDF) {
 		this.rutaPDF = rutaPDF;
 		this.controller.closeDocument();
 		this.controller.openDocument(this.rutaPDF.toString());
 	}
-
+	/**
+	 * Método que carga el archivo PDF en el visor.
+	 */
 	public void cargarPDF() {
 		this.controller.openDocument(this.rutaPDF.toString());
 		this.controller.getDocumentViewController().setAnnotationCallback(
 				new org.icepdf.ri.common.MyAnnotationCallback(controller.getDocumentViewController()));
 	}
-
+	/**
+	 * Método que configura ciertos valores del visor.
+	 */
 	private void configurarVistaPredeterminada() {
 		// Configurar el modo de vista predeterminado
 		this.controller.setPageViewMode(ABORT, getVerifyInputWhenFocusTarget());

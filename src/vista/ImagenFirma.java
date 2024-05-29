@@ -10,12 +10,21 @@ import java.io.IOException;
 import java.util.Date;
 
 import javax.imageio.ImageIO;
-
+/**
+ * Clase que genera una imagen de firma digital que luego se añade al documento a la hora de firmar
+ * @author David García Diez
+ */
 public class ImagenFirma {
 
 	private final String dir = System.getProperty("user.dir");
 	private File output;
-
+	/**
+	 * Genera la imagen a partir de los parámetros
+	 * @param nombre El nombre del firmante
+	 * @param nivelSeguridad el nivel de seguridad de la firma
+	 * @param anchura El tamaño en ancho de la firma
+	 * @param altura El tamaño en alto de la firma
+	 */
 	public ImagenFirma(String nombre, int nivelSeguridad, int anchura, int altura) {
 		BufferedImage imagen = new BufferedImage(anchura, altura, BufferedImage.TYPE_INT_ARGB);
 		

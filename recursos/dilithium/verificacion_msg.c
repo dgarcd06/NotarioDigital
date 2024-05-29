@@ -21,12 +21,12 @@ void	fprintBstr(FILE *fp, char *s, unsigned char *a, unsigned long long l);
 /**
  * ***FIRMA DIG***
  * En primer lugar se crea la clave publica y privada y se almacenan en archivos separados
- * Estos se generan a partir de una semilla? 
+ * Estos se generan a partir de una semilla
  * Despues se recibe el mensaje y se firma(se encripta) y se almacena en un archivo
  * 
  * ***VERIFICACION***
  * Una vez estén creados y almacenados comienza el código de verificacion.
- * Se recoge la información de los distintos archivos creados (MENOS LA CLAVE PRIVADA OBVIO).
+ * Se recoge la información de los distintos archivos creados (MENOS LA CLAVE PRIVADA).
  * Se necesita la clave publica y el mensaje encriptado.
  * Despues se descifrará y se verificará, imprimiendo si es correcto o no en un printf
 */

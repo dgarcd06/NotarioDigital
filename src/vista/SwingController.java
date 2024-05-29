@@ -113,9 +113,10 @@ import static org.icepdf.ri.util.ViewerPropertiesManager.*;
 
 
 /**
+ * Esta clase junto con SwingViewBuilder han sufrido una modificación con el fin de 
+ * cambiar la apariencia del visor PDF. 
  * Controller is the meat of a PDF viewing application. It is the Controller
- * aspect of the Model-View-Controller (MVC) framework.<br>
- * <br>
+ * aspect of the Model-View-Controller (MVC) framework.
  * Controller acts as a bridge between a Swing user interface, as built by
  * SwingViewerBuilder; the Document class, which is the root accessor to the PDF content;
  * and the ViewerModel, which maintains the state of the user's perspective of said Document.

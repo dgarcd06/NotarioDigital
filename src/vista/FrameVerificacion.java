@@ -23,11 +23,23 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
 @SuppressWarnings("serial")
+/**
+ * Este frame se muestra cuando el documento PDF abierto contiene una firma.
+ * En ese caso, muestra si la firma ha podido ser verificada a partir de las comprobaciones
+ * en la clase Firma Digital. Además, muestra la clave pública, la firma digital y el certificado.
+ * @author David García Diez
+ */
 public class FrameVerificacion extends JFrame {
 
     private static Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
     private JPanel panel = new JPanel();
-
+    /**
+     * Construye el Frame de verificación y se muestra.
+     * @param verificado true si la firma fue verificada, false si no lo fue
+     * @param firma la firma digital en un array de bytes
+     * @param clavePublica la clave pública en un array de bytes
+     * @param certificado el certificado digital
+     */
     public FrameVerificacion(Boolean verificado, byte[] firma, byte[] clavePublica, X509Certificate certificado) {
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setUndecorated(false);
@@ -38,7 +50,14 @@ public class FrameVerificacion extends JFrame {
         editarPanel(panel, verificado, firma, clavePublica, certificado);
         this.setVisible(true);
     }
-
+    /**
+     * Configura el frame, su apariencia y añade la información deseada
+     * @param panel El panel sobre el que se imprimirán los datos
+     * @param verificado Mostrará en verde el texto si es verificado y en rojo si no
+     * @param firma	Mostrará un JDialog con la firma digital
+     * @param clavePublica Mostrará un JDialog con la clave pública
+     * @param certificado Mostrará un JDialog con el certificado digital
+     */
     public static void editarPanel(JPanel panel, Boolean verificado, byte[] firma, byte[] clavePublica, X509Certificate certificado) {
         panel.setLayout(new GridBagLayout());
         panel.setBackground(Color.WHITE);
@@ -118,7 +137,12 @@ public class FrameVerificacion extends JFrame {
             }
         });
     }
-
+    /**
+     * Método que introduce y configura la apariencia del botón que abre los JDialog
+     * @param labelText El texto que llevará el botón
+     * @param button El botón
+     * @return panel el panel configurando la apariencia
+     */
     private static JPanel createPanelWithButton(String labelText, JButton button) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
@@ -136,7 +160,11 @@ public class FrameVerificacion extends JFrame {
         
         return panel;
     }
-
+    /**
+     * Método que muestra el JDialog con sus componentes
+     * @param titulo El titulo del JDialog
+     * @param contenido El contenido del JDialog
+     */
     private static void mostrarContenido(String titulo, String contenido) {
         JDialog dialogo = new JDialog();
         dialogo.setTitle(titulo);

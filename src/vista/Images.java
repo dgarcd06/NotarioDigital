@@ -17,33 +17,17 @@ package vista;
 
 import org.icepdf.ri.util.ViewerPropertiesManager;
 
-import vista.IconPack.Variant;
-
 import javax.swing.*;
+
+import static vista.IconPack.Variant;
+
 import java.net.URL;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
-
-import static vista.IconPack.Variant;
-
 /**
- * Utility class providing a unified interface to all application icons.
- * <p/>
- * For a one-off, directly accessing the default icon pack, call {@link #get(String)}. When loading icons which
- * are meant to be customizable by applications embedding ICEpdf, call:
- * <ul>
- *     <li>for a single icon {@link #getSingleIcon(String, Variant, IconSize)}</li>
- *     <li>for a button without different styles for its states,
- *     {@link #applyIcon(AbstractButton, String, Variant, IconSize)}</li>
- *     <li>for a button with different styles per state, {@link #applyIcons(AbstractButton, String, IconSize)}</li>
- * </ul>
- * Icons for the different states will be loaded and registered on the button if the current icon pack provides
- * these styles. Note that all types of buttons, including {@code JMenu}s and {@code JMenuItem}s are supported
- * by {@link #applyIcons(AbstractButton, String, IconSize)} and
- * {@link #applyIcon(AbstractButton, String, Variant, IconSize)}.
- *
+ * Clase auxiliar para poder modificar SwingController y SwingViewBuiler.
  * @author Mark Collette
  * @author Alexander Leithner
  * @since 2.0
@@ -52,7 +36,6 @@ public class Images {
 
     /**
      * Enum specifying the wanted size of the icon
-     * <p/>
      * Note that icon packs may choose to ignore icon sizes
      */
     public enum IconSize {
@@ -98,14 +81,12 @@ public class Images {
 
     /**
      * Legacy string, kept for compatibility reasons when reading old preferences files.
-     * <p/>
      * Any new usage should instead switch to {@link IconSize#LARGE}.
      */
     public static final String SIZE_LARGE = "_32";
 
     /**
      * Legacy string, kept for compatibility reasons when reading old preferences files.
-     * <p/>
      * Any new usage should instead switch to {@link IconSize#SMALL}.
      */
     public static final String SIZE_SMALL = "_24";
@@ -122,7 +103,6 @@ public class Images {
 
     /**
      * Get the current setting for the icon size or the given "else" value if preference is unset or is invalid
-     * <p/>
      * This method is equivalent to calling {@code getDefaultIconSizeOr(propertiesManager.getPreferences(), elseValue)}
      *
      * @param propertiesManager The Properties Manager to retrieve the preferences from
@@ -158,7 +138,6 @@ public class Images {
 
     /**
      * Apply normal, pressed, rollover and disabled variants of the given icon in the given size to the given button
-     * <p/>
      * Pressed, rollover and disabled icons are only registered if the current icon pack supports those variants
      *
      * @param button   The button to register the icons to
@@ -174,7 +153,6 @@ public class Images {
 
     /**
      * Apply the given icon in the given variant and size to the given button
-     * <p/>
      * No check is made whether the current icon pack provides the variant asked for. If it doesn't, calling this
      * method may either fail with a runtime exception or a corrupted icon being displayed by the button.
      *
@@ -189,7 +167,6 @@ public class Images {
 
     /**
      * Get a single icon in the given variant and size from the current icon pack
-     * <p/>
      * If the icon pack encounters an error trying to create the icon, it may throw a {@code RuntimeException},
      * which will not be caught by this method but passed to the callee.
      *

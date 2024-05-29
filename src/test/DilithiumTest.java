@@ -84,8 +84,8 @@ class DilithiumTest {
 		PDDocument docFirmado = PDDocument.load(new File(dir + "\\recursos\\pdf_test_firmado.pdf"));
 		n.abrirArchivoArrastrado(new File(dir + "\\recursos\\pdf_test_firmado.pdf"));
 		
-		assertTrue(verificar.verificarFirmaDocumento(n.getDoc(), n.buscarFirmaDocumento(n.getDoc())));
-		assertFalse(verificar.verificarFirmaDocumento(docFirmado, new PDSignature()));
+		assertTrue(verificar.verificarFirmaDocumento(n.buscarFirmaDocumento(n.getDoc())));
+		assertFalse(verificar.verificarFirmaDocumento(new PDSignature()));
 		assertNull(NotarioDigital.buscarFirmaDocumento(docNoFirmado));
 		
 	}

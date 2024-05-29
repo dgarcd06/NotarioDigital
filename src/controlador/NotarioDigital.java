@@ -9,19 +9,13 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Calendar;
-import java.util.Collection;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
@@ -50,18 +44,8 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.visible.PDVisibleS
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.cms.SignerInformation;
-import org.bouncycastle.cms.SignerInformationStore;
-import org.bouncycastle.cms.SignerInformationVerifier;
-import org.bouncycastle.cms.jcajce.JcaSignerInfoVerifierBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentVerifierProvider;
-import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
-import org.bouncycastle.util.Store;
 import org.icepdf.ri.common.SwingController;
 
 import com.formdev.flatlaf.FlatLightLaf;
@@ -75,30 +59,33 @@ import vista.VisorPDF;
 /**
  * Frame principal de la aplicación. Aquí se coordinan las funciones lógicas de
  * Dilithium con el visor PDF.
+ * @author David García Diez
  */
 @SuppressWarnings("serial")
 public class NotarioDigital extends JFrame {
 	private Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-	private JMenuBar menu; // Menú de opciones para la pantalla
+	// Menú de opciones para la pantalla con sus items
+	private JMenuBar menu;
 	private JMenu archivo, editar, ayuda, firmaVisual, firmaRapida;
-	private JMenuItem abrir, guardar, salir, verificar, visual2, visual3, visual5, rapida2, rapida3, rapida5,
-			comoUsar, acercaDe;
+	private JMenuItem abrir, guardar, salir, verificar, visual2, visual3, visual5, rapida2, rapida3, rapida5, comoUsar,
+			acercaDe;
 	private int pdfCargado = 0; // 0 = No cargado | 1 = Cargado | 2 = Modificado
 	private static File rutaPDF; // Objeto que usaremos para cargar despues el pdf
-	private static PDDocument doc;
-	private static FirmaDigital firmaDigital;
-	private static VisorPDF visor;
-	private final static String dir = System.getProperty("user.dir");
+	private static PDDocument doc; // Objeto de ApachePDFBox para todas las interacciones con el PDF
+	private static FirmaDigital firmaDigital; // Para la parte de Modelo de la aplicación
+	private static VisorPDF visor; // Para la parte de Vista de la aplicación
+	private final static String dir = System.getProperty("user.dir"); // Variable para acceder a los recursos del
+																		// proyecto
 	private JPanel panel;
 	private static String archivo_output;
 	static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
+		Security.addProvider(new BouncyCastleProvider());
+		Security.addProvider(new BouncyCastlePQCProvider());
+	}
 
 	public NotarioDigital() {
-		Security.addProvider(new BouncyCastlePQCProvider());
 		try {
-			UIManager.setLookAndFeel(new FlatLightLaf());
+			UIManager.setLookAndFeel(new FlatLightLaf()); // Para mejorar el aspecto de Java Swing
 			this.setTitle("Notario Digital");
 			this.setSize(650, 500);
 			this.setLocation(dim.width / 2 - this.getSize().width / 2, dim.height / 2 - this.getSize().height / 2);
@@ -163,30 +150,9 @@ public class NotarioDigital extends JFrame {
 
 		/* ACCIONES DE LOS BOTONES */
 
-		// ARCHIVO
+		// Se abre un menú para seleccionar un archivo PDF y cargarlo
 		abrir.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// Si ya hay un pdf cargado SIN GUARDAR (pdf_cargado == 2 es que está
-				// modificado) hay que cerrarlo para abrir otro
-				Boolean borrar = false;
-				if (pdfCargado == 2) {
-					int option = JOptionPane.showConfirmDialog(null,
-							"Un PDF ha sido modificado sin guardar cambios. ¿Desea guardar antes de cerrarlo?");
-					if (option == JOptionPane.YES_OPTION) {
-						try {
-							guardar(pdfCargado);
-							setPDFCargado(0);
-						} catch (Exception ex) {
-							JOptionPane.showMessageDialog(null,
-									"No se ha podido guardar el PDF. Comprueba que tiene permisos para escribir en la ruta indicada.\n"
-											+ ex.getMessage(),
-									"Error", JOptionPane.ERROR_MESSAGE);
-						}
-					} else if (option == JOptionPane.NO_OPTION) {
-						borrar = true;
-					}
-				}
-
 				JFileChooser selector = new JFileChooser();
 				FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PDF", "pdf");
 				selector.setFileFilter(filter);
@@ -216,26 +182,14 @@ public class NotarioDigital extends JFrame {
 							visor.cargarPDF();
 							revalidate();
 							repaint();
-							// Si el PDF anterior estaba firmado (pdfCargado == 2) y no se quiere guardar se
-							// borra
-							if (borrar) {
-								File eliminarArchivo = new File(archivo_output);
-								if (eliminarArchivo.delete()) {
-									System.out.println("El archivo ha sido eliminado exitosamente.");
-								} else {
-									System.out.println(
-											"No se pudo eliminar el archivo. Verifica que el archivo exista y que tengas los permisos necesarios.");
-								}
-							}
 						}
-
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					}
 				}
 			}
 		});
-
+		// Si está cargado, se puede guardar una copia del PDF
 		guardar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 0) {
@@ -253,14 +207,23 @@ public class NotarioDigital extends JFrame {
 				}
 			}
 		});
-
+		/**
+		 * Termina el programa. Se pensó una comprobación si el PDF fue modificado, pero
+		 * al firmar se crea un nuevo pdf con el sufijo "_firmado", por lo que no tiene
+		 * sentido preguntar por guardar antes de cerrar.
+		 */
 		salir.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
 
-		// ACCIONES DE EDITAR
+		/**
+		 * Visual corresponde a la posibilidad de seleccionar el área de la firma y
+		 * rapida a una firma automática en el documento. 2, 3 y 5 se corresponde con
+		 * los diferentes niveles de seguridad que incluye la implementación de
+		 * Dilithium.
+		 */
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
@@ -424,52 +387,52 @@ public class NotarioDigital extends JFrame {
 				revalidate();
 			}
 		});
-
+		/**
+		 * Si hay un PDF cargado se busca una firma en el documento. Si se encuentra, se
+		 * abre un Frame (clase FrameVerificacion) que muestra la información de claves
+		 * y afirma o niega la autoridad de la firma según la clave pública y la firma.
+		 */
 		verificar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				PDSignature firmaDocumento;
 				if (pdfCargado == 1) {
-						//Se busca firma en el documento. Si no hay, no se puede verificar
-						//La verificacion se hace en la clase FirmaDigital
-						//Después se crea un frame con la información de la verificación
-						try {
-							firmaDocumento = buscarFirmaDocumento(doc);
-							if(firmaDocumento != null) {
-								FirmaDigital verificador = new FirmaDigital();
-								Boolean firmaVerificada = verificador.verificarFirmaDocumento(doc, firmaDocumento);
-								new FrameVerificacion(firmaVerificada,verificador.getFirma(),firmaDocumento.getContents(),verificador.getCertificado());
-							}else {
-								JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
-										JOptionPane.ERROR_MESSAGE);
-							}
-							
-						} catch (IOException e1) {
-							e1.printStackTrace();
-						}
-						
-				}else if(pdfCargado == 2) { 
+
+					firmaDocumento = buscarFirmaDocumento(doc);
+					if (firmaDocumento != null) {
+						FirmaDigital verificador = new FirmaDigital();
+						Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
+						new FrameVerificacion(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
+								verificador.getCertificado());
+					} else {
+						JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
+
+					// Si se ha firmado justo en la ejecución, se aprovechan los datos en memoria
+				} else if (pdfCargado == 2) {
 					try {
-						Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc, doc.getLastSignatureDictionary());
-						new FrameVerificacion(firmaVerificada,firmaDigital.getFirma(),doc.getLastSignatureDictionary().getContents(),firmaDigital.getCertificado());
+						Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc.getLastSignatureDictionary());
+						new FrameVerificacion(firmaVerificada, firmaDigital.getFirma(),
+								firmaDigital.getClavePublica().getEncoded(), firmaDigital.getCertificado());
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
-				}else {
+				} else {
 					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
 
-		// ACCIONES DE AYUDA
+		// Estos dos últimos Items aportan información sobre el programa y su uso
 		comoUsar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(null,
-						  "Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.\n"
-						+ "Puede elegir entre Firma Automática, de manera que la firma se incluirá automáticamente en el documento, o bien seleccionar el área de firma con Firma Visual.\n"
-						+ "Si selecciona Firma Visual, confirme el área seleccionado para añadir la firma en el documento.\n"
-						+ "Dentro de las dos opciones, se puede seleccionar el nivel de seguridad de Dilithium, entre las opciones 2, 3 y 5.\n"
-						+ "Al pulsar Verificación, se buscará una firma en el documento. En el caso de existir la firma, se comprobará su veracidad a partir de la recogida de sus datos del documento.",
+						"Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.\n"
+								+ "Puede elegir entre Firma Automática, de manera que la firma se incluirá automáticamente en el documento, o bien seleccionar el área de firma con Firma Visual.\n"
+								+ "Si selecciona Firma Visual, confirme el área seleccionado para añadir la firma en el documento.\n"
+								+ "Dentro de las dos opciones, se puede seleccionar el nivel de seguridad de Dilithium, entre las opciones 2, 3 y 5.\n"
+								+ "Al pulsar Verificación, se buscará una firma en el documento. En el caso de existir la firma, se comprobará su veracidad a partir de la recogida de sus datos del documento.",
 						"Como usar la aplicación", JOptionPane.INFORMATION_MESSAGE);
 
 			}
@@ -479,16 +442,13 @@ public class NotarioDigital extends JFrame {
 
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(null,
-						  "Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales con el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\".\n"
-						+ "Esta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin de Grado en la Universidad de León.\n"
-						+ "El desarrollo de la aplicación tiene fines de investigación; si bien su desarrollo cumple con la seguridad del algoritmo, el certificado digital es emitido por una autoridad de certificación. No se recomienda su uso profesional.",
+						"Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales con el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\"."
+								+ "Esta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin de Grado en la Universidad de León."
+								+ "El desarrollo de la aplicación tiene fines de investigación; si bien su desarrollo cumple con la seguridad del algoritmo, el certificado digital no es emitido por una autoridad de certificación, por lo que no podrá validarse según la normativa europea.",
 						"Acerca de...", JOptionPane.INFORMATION_MESSAGE);
 			}
-
 		});
-
 		this.setJMenuBar(menu);
-
 	}
 
 	/**
@@ -504,9 +464,9 @@ public class NotarioDigital extends JFrame {
 
 	/**
 	 * Guarda cambios en un PDF. Escribe el PDF en la ruta indicada
-	 * 
+	 * @param pdfCargado Se pasa por parametro el estado de carga del pdf
 	 * @return 0 si se ha podido guardar correctamente, 1 si ha habido errores
-	 * @throws IOException
+	 * @throws IOException En el método save de ApachePDFBox
 	 */
 	public static int guardar(int pdfCargado) throws IOException {
 		if (pdfCargado != 0 && doc != null) {
@@ -531,6 +491,27 @@ public class NotarioDigital extends JFrame {
 
 	}
 
+	/**
+	 * Método que se encarga de generar las claves, firma y certificado digital con
+	 * la llamada a la clase FirmaDigital. Posteriormente crea la interfaz de la
+	 * firma con la librería Apache PDFBox, y añade la firma en el PDF con los datos
+	 * generados. El PDF original no es modificado, sino que se genera uno nuevo con
+	 * la firma. Posteriormente se muestra el nuevo PDF generado.
+	 * 
+	 * @param nivelSeguridad El nivel de seguridad de Dilithium. Puede ser 2,3 o 5,
+	 *                       y será necesario para la generación de las claves y de
+	 *                       la firma al llamar a la clase FirmaDigital.
+	 * @param x              La posición en x de la imagen de firma que se inserta
+	 *                       en el documento.
+	 * @param y              La posición en y de la imagen de firma que se inserta
+	 *                       en el documento.
+	 * @param width          El tamaño en anchura que tendrá la imagen de la firma.
+	 *                       Se usa para su creación en la llamada a ImagenFirma.
+	 * @param height         El tamaño en altura que tendrá la imamgen de la firma.
+	 * @throws IOException Cubre posibles excepciones en varias llamadas de métodos
+	 *                     de ApachePDBox, de la clase FirmaDigital y de la clase
+	 *                     FileOutputStream al generar el archivo firmado.
+	 */
 	public static void firmaDocumento(int nivelSeguridad, int x, int y, int width, int height) throws IOException {
 		firmaDigital = new FirmaDigital(nivelSeguridad);
 		new ImagenFirma("David García Diez", nivelSeguridad, width, height);
@@ -609,7 +590,7 @@ public class NotarioDigital extends JFrame {
 	 * Función para cargar un archivo arrastrado hacia la pantalla. Similar a la
 	 * funcionalidad del JMenuItem Abrir
 	 * 
-	 * @param rutaPDF La ruta del archivo que se arrastre hacia la pantalla
+	 * @param ruta La ruta del archivo que se arrastre hacia la pantalla
 	 */
 	public void abrirArchivoArrastrado(File ruta) {
 		panel.removeAll();
@@ -643,6 +624,12 @@ public class NotarioDigital extends JFrame {
 		}
 	}
 
+	/**
+	 * La clase interna FileTransferHandler se encarga de recoger el archivo PDF
+	 * arrastrado, y si es correcto recoge su ruta. Después llama al método
+	 * abrirArchivoArrastrado, creado justo para procesar el resultado recogido de
+	 * este código.
+	 */
 	private class FileTransferHandler extends TransferHandler {
 		@Override
 		public boolean canImport(TransferSupport support) {
@@ -683,15 +670,37 @@ public class NotarioDigital extends JFrame {
 		}
 	}
 
+	/**
+	 * Método para evaluar la modificación de la variable global pdfCargado, que
+	 * sirve como comprobación antes de realizar acciones de carga, guardado o
+	 * incluso de firma y verificación
+	 * @return El estado de carga de un PDF en la aplicación.
+	 */
 	public int getPDFCargado() {
 		return pdfCargado;
 	}
-	
+
+	/**
+	 * Método para recoger el PDDocument, y poder interactuar con él. Utilizado para
+	 * tests.
+	 * @return El documento cargado o null si no se ha cargado ninguno
+	 */
 	public PDDocument getDoc() {
 		return doc;
 	}
 
-	public static PDSignature buscarFirmaDocumento(PDDocument doc) throws IOException {
+	/**
+	 * Método encargado de buscar un componente de firma en el documento. Para ello,
+	 * en primer lugar busca un Acroform (formulario interactivo en un PDF) y dentro
+	 * de este busca un componente de firma. Si lo encuentra, lo almacena en un
+	 * objeto PDSignature, el cuál permite entre otras cosas extraer la información
+	 * de la firma
+	 * 
+	 * @param doc El documento cargado
+	 * @return PDSignature un objeto firma que contendrá los datos de una firma
+	 *         digital. Null si no encuentra un campo de firma
+	 */
+	public static PDSignature buscarFirmaDocumento(PDDocument doc) {
 		PDSignature signature = null;
 		PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
 

@@ -2,14 +2,10 @@ package vista;
 
 import javax.swing.*;
 
-
 import static vista.Images.IconSize;
 
 /**
- * Abstract class providing logic for fetching icons from the classpath
- * <p/>
- * Ultimately, this should only be called by the {@link Images} utility class
- *
+ * Clase auxiliar para poder modficar SwingController y SwingViewBuilder.
  * @author Alexander Leithner
  */
 public abstract class IconPack {
@@ -20,7 +16,6 @@ public abstract class IconPack {
     public enum Variant {
         /**
          * "None" variant, i.e. either no variant is preferred or the source icon is known not to have variants.
-         * <p/>
          * An icon pack may choose to load a different variant than "none" if it deems it appropriate to do so.
          */
         NONE,
@@ -129,7 +124,6 @@ public abstract class IconPack {
 
     /**
      * Gets all variants this icon pack provides for at least one icon.
-     * <p/>
      * This method is called by the {@link Images} utility class when deciding what icons to register to a given
      * component. No guarantee regarding further usage is made.
      *
@@ -139,7 +133,6 @@ public abstract class IconPack {
 
     /**
      * Gets a single icon with the given name in the given variant and size from the classpath.
-     * <p/>
      * Note that the {@code size} parameter is to be regarded as a hint. If the icon pack deems it necessary to return
      * another size for any given icon, the icon will be returned in this size instead. No guarantee is made that any
      * icon return by this method is square

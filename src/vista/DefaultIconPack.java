@@ -7,18 +7,7 @@ import vista.Images.IconSize;
 import java.net.URL;
 
 /**
- * Icon pack definition for the default colour icons shipping with ICEpdf
- * <p/>
- * This icon pack supports all icon variants. Typical icon sizes are:
- * <ul>
- *     <li>{@code HUGE}: 57&times;48 px</li>
- *     <li>{@code LARGE}: 32&times;32 px</li>
- *     <li>{@code SMALL}: 24&times;24 px</li>
- *     <li>{@code MINI}: 20&times;20 px</li>
- *     <li>{@code TINY}: 16&times;16 px</li>
- * </ul>
- * All icons in this pack are returned as {@link ImageIcon}s created from PNG files
- *
+ * Clase auxiliar para poder modificar el código de SwingController y SwingViewBuilder.
  * @author Alexander Leithner
  */
 public class DefaultIconPack extends IconPack {

@@ -14,26 +14,20 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.cms.CMSAttributes;
-import org.bouncycastle.asn1.cms.CMSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -56,7 +50,6 @@ import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.SignerInformationStore;
 import org.bouncycastle.cms.SignerInformationVerifier;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
-import org.bouncycastle.cms.jcajce.JcaSignerInfoVerifierBuilder;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -65,13 +58,11 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.*;
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec;
 import org.bouncycastle.util.Store;
 
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 
-@SuppressWarnings("static-access")
 /**
  * FirmaDigital es la clase que incluye la lógica de la firma de Dilithium. Para
  * ello hace uso de la librería criptográfica Bouncy Castle.
@@ -79,12 +70,9 @@ import org.bouncycastle.cert.jcajce.JcaCertStore;
  * Al instanciar la clase, se recibe como parámetro el nivel de seguridad
  * deseado para Dilithium.
  * 
- * El propio constructor genera un par de claves y la firma digital a partir de
- * un mensaje, aunque estos métodos sirven para testear el funcionamiento del
- * algoritmo.
- * 
  * El método encargado de generar la Firma Digital basada en el estándar CMS es
  * codigoFirma()
+ * @author David García Diez
  */
 public class FirmaDigital {
 
@@ -92,7 +80,7 @@ public class FirmaDigital {
 		Security.addProvider(new BouncyCastleProvider());
 	}
 	private AsymmetricCipherKeyPair parClaves; // keypair compatible con Dilithium, no con Java
-	private int dilithiumMode;
+	private int dilithiumMode = 2;
 	private byte[] mensaje, firma;
 	private static PrivateKey sk;
 	private PublicKey pk;
@@ -118,11 +106,11 @@ public class FirmaDigital {
 		} else {
 			new DilithiumKeyGenerationParameters(new SecureRandom(), DilithiumParameters.dilithium2);
 		}
-		mensaje = "¡Dilithium!".getBytes();
+		mensaje = "¡Dilithium!".getBytes(); // Puede establecerse cualquier mensaje.
 	}
 
 	/**
-	 * Constructor vacío para la verificacion
+	 * Constructor vacío para crear un objeto para la verificacion
 	 */
 	public FirmaDigital() {
 
@@ -138,16 +126,21 @@ public class FirmaDigital {
 		return firma;
 	}
 
+	// Devuelve la clave pública del certificado digital con el que verificar una
+	// firma.
 	public PublicKey getClavePublica() {
 		return this.pk;
 	}
 
+	// Devuelve un certificado digital una vez se haya generado o recuperado de una
+	// firma
 	public X509Certificate getCertificado() {
-		return certificado;
+		return this.certificado;
 	}
 
+	// Devuelve el nivel de seguridad establecido en la instancia(2 por defecto)
 	public int getDilithiumMode() {
-		return dilithiumMode;
+		return this.dilithiumMode;
 	}
 
 	/**
@@ -169,7 +162,8 @@ public class FirmaDigital {
 	 * @throws InvalidAlgorithmParameterException Error al inicializar el
 	 *                                            keyPairGenerator (parametro
 	 *                                            incorrecto)
-	 * @throws CertIOException
+	 * @throws CertIOException                    Al añadir Key Usage Extensions
+	 *                                            (información del certificado)
 	 */
 	private static X509Certificate generarCertificado(int dilithiumMode)
 			throws OperatorCreationException, CertificateException, NoSuchAlgorithmException, NoSuchProviderException,
@@ -217,17 +211,17 @@ public class FirmaDigital {
 		}
 
 		X509CertificateHolder certHolder = certBuilder.build(signer);
-		
+
 		return new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
 	}
 
 	/**
 	 * Genera la Firma Digital siguiendo el estándar CMS. CMS: En primer lugar se
-	 * genera un hash del mensaje con el digest algorithm. después, ese hash se
-	 * firma con el ContentSigner, que en este caso será Dilithium. Además, genera
-	 * un certificado con el método generarCertificado, que irá incluido. El digest
-	 * algorithm es SHAKE-256 y el algoritmo de Firma Digital es Dilithium. Genera
-	 * un objeto CMSSignedData, que es la firma.
+	 * genera un hash del mensaje con el digest algorithm(SHA-256). después, ese
+	 * hash se firma con el ContentSigner, que en este caso será Dilithium. Además,
+	 * genera un certificado con el método generarCertificado, que irá incluido. El
+	 * digest algorithm es SHAKE-256 y el algoritmo de Firma Digital es Dilithium.
+	 * Genera un objeto CMSSignedData, que es la firma.
 	 * 
 	 * @param dilithiumMode El nivel de seguridad elegido al instanciar la clase
 	 * @return signedData.getEncoded() el array de bytes con la firma digital
@@ -281,10 +275,30 @@ public class FirmaDigital {
 		}
 	}
 
-	public boolean verificarFirmaDocumento(PDDocument doc, PDSignature firmaDocumento) {
+	/**
+	 * Previamente se comprueba la existencia de una firma en el documento en
+	 * NotarioDigital. Se extrae la información de la firma a partir del
+	 * parámetro,transformando los datos para obtener de ellos el certificado
+	 * digital, la firma y la clave pública que comprueba la validez de la firma.
+	 * Una vez obtenidos los datos, se genera un objeto SignerInformationVerifier,
+	 * el cual, con el método verify realiza una serie de comprobaciones para
+	 * determinar la verificación de la firma. Para obtener información acerca del
+	 * método verify, se puede obtener la documentación en: TODO Por otro lado, se
+	 * puede observar el source code.
+	 * 
+	 * @param firmaDocumento Un objeto de Apache PDFBox, que se corresponde con
+	 *                       información de firma digital en un documento
+	 * @return true si las comprobaciones del método son correctas para la clave
+	 *         pública y firma proporcionadas false si alguna de las comprobaciones
+	 *         provoca una excepción
+	 *         
+	 *         En términos generales, las excepciones en el catch no deberían saltar
+	 *         siempre y cuando la llamada a la función se haga posteriormente a comprobar
+	 *         la existencia de un objeto PDSignature no nulo en el documento
+	 */
+	public boolean verificarFirmaDocumento(PDSignature firmaDocumento) {
 		try {
 			byte[] contenidoFirma = firmaDocumento.getContents();
-			byte[] datosFirma = firmaDocumento.getSignedContent(new ByteArrayInputStream(contenidoFirma));
 
 			CMSSignedData datosCMS = new CMSSignedData(new ByteArrayInputStream(contenidoFirma));
 			Store<?> certStore = datosCMS.getCertificates();
@@ -292,12 +306,12 @@ public class FirmaDigital {
 			Collection<SignerInformation> signers = signerInfoStore.getSigners();
 
 			for (SignerInformation signer : signers) {
+				@SuppressWarnings("unchecked")
 				Collection<?> matches = certStore.getMatches(signer.getSID());
 				X509CertificateHolder certHolder = (X509CertificateHolder) matches.iterator().next();
-				CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-				certificado = new JcaX509CertificateConverter().getCertificate(certHolder);
+				this.certificado = new JcaX509CertificateConverter().getCertificate(certHolder);
 
-				pk = certificado.getPublicKey();
+				pk = this.certificado.getPublicKey();
 				firma = signer.getSignature();
 				SignerInformationVerifier verifier = new JcaSimpleSignerInfoVerifierBuilder()
 						.build(certificado.getPublicKey());
@@ -309,7 +323,7 @@ public class FirmaDigital {
 				}
 			}
 			return false;
-		} catch (IOException | CMSException | CertificateException | OperatorCreationException | NullPointerException e) {
+		} catch (CMSException | CertificateException | OperatorCreationException | NullPointerException e) {
 			e.printStackTrace();
 			return false;
 		}
