@@ -176,7 +176,7 @@ public class NotarioDigital extends JFrame {
 							firmaRapida.setEnabled(true);
 							// Inicializar el controlador de Swing
 							visor = new VisorPDF(new SwingController(), rutaPDF);
-
+							verificar(0);
 							// Agregar el visor al Frame principal
 							getContentPane().add(visor, BorderLayout.CENTER);
 							visor.cargarPDF();
@@ -394,33 +394,7 @@ public class NotarioDigital extends JFrame {
 		 */
 		verificar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				PDSignature firmaDocumento;
-				if (pdfCargado == 1) {
-
-					firmaDocumento = buscarFirmaDocumento(doc);
-					if (firmaDocumento != null) {
-						FirmaDigital verificador = new FirmaDigital();
-						Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
-						new FrameVerificacion(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
-								verificador.getCertificado());
-					} else {
-						JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
-								JOptionPane.ERROR_MESSAGE);
-					}
-
-					// Si se ha firmado justo en la ejecución, se aprovechan los datos en memoria
-				} else if (pdfCargado == 2) {
-					try {
-						Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc.getLastSignatureDictionary());
-						new FrameVerificacion(firmaVerificada, firmaDigital.getFirma(),
-								firmaDigital.getClavePublica().getEncoded(), firmaDigital.getCertificado());
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-				} else {
-					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
-							JOptionPane.ERROR_MESSAGE);
-				}
+				verificar(1);
 			}
 		});
 
@@ -512,7 +486,7 @@ public class NotarioDigital extends JFrame {
 	 *                     de ApachePDBox, de la clase FirmaDigital y de la clase
 	 *                     FileOutputStream al generar el archivo firmado.
 	 */
-	public static void firmaDocumento(int nivelSeguridad, int x, int y, int width, int height) throws IOException {
+	public void firmaDocumento(int nivelSeguridad, int x, int y, int width, int height) throws IOException {
 		firmaDigital = new FirmaDigital(nivelSeguridad);
 		new ImagenFirma("David García Diez", nivelSeguridad, width, height);
 		archivo_output = rutaPDF.getAbsolutePath().substring(0, rutaPDF.getAbsolutePath().lastIndexOf("."));
@@ -582,6 +556,7 @@ public class NotarioDigital extends JFrame {
 			doc.close();
 			File docFirmado = new File(archivo_output);
 			doc = PDDocument.load(docFirmado);
+			verificar(0);
 			visor.setDocumento(docFirmado);
 		}
 	}
@@ -621,6 +596,47 @@ public class NotarioDigital extends JFrame {
 			visor.cargarPDF();
 		} catch (IOException ex) {
 			ex.printStackTrace();
+		}
+	}
+	
+	public void verificar(int tipo) {
+		if(tipo == 1) {
+			PDSignature firmaDocumento;
+			if (pdfCargado == 1) {
+
+				firmaDocumento = buscarFirmaDocumento(doc);
+				if (firmaDocumento != null) {
+					FirmaDigital verificador = new FirmaDigital();
+					Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
+					new FrameVerificacion(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
+							verificador.getCertificado());
+				} else {
+					JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+
+				// Si se ha firmado justo en la ejecución, se aprovechan los datos en memoria
+			} else if (pdfCargado == 2) {
+				try {
+					Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc.getLastSignatureDictionary());
+					new FrameVerificacion(firmaVerificada, firmaDigital.getFirma(),
+							firmaDigital.getClavePublica().getEncoded(), firmaDigital.getCertificado());
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			} else {
+				JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+						JOptionPane.ERROR_MESSAGE);
+			}
+		}else {
+			PDSignature firmaDocumento;
+			firmaDocumento = buscarFirmaDocumento(doc);
+			if (firmaDocumento != null) {
+				FirmaDigital verificador = new FirmaDigital();
+				Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
+				visor.getPropiedadesFirma(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
+						verificador.getCertificado());
+			}
 		}
 	}
 

@@ -1,9 +1,13 @@
 package vista;
 
 import java.awt.BorderLayout;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.security.cert.X509Certificate;
 
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -24,6 +28,9 @@ public class VisorPDF extends JPanel {
 	private SwingController controller;
 	private SwingViewBuilder factory;
 	private JPanel panelPDF;
+	private Boolean firmaVerificada;
+	private byte[] firma, clavePublica;
+	X509Certificate certificado;
 	/**
 	 * Prepara la configuración del visor con el archivo que se le pasa
 	 * @param controller este objeto se encarga de configurar el comportamiento del visor PDF
@@ -46,6 +53,7 @@ public class VisorPDF extends JPanel {
 		panelPDF.setBounds(0, 0, getWidth(), getHeight());
 		setLayout(new BorderLayout());
 		this.add(panelPDF);
+		
 	}
 	/**
 	 * Devuelve el controller
@@ -68,15 +76,23 @@ public class VisorPDF extends JPanel {
 	public void setDocumento(File rutaPDF) {
 		this.rutaPDF = rutaPDF;
 		this.controller.closeDocument();
-		this.controller.openDocument(this.rutaPDF.toString());
+		cargarPDF();
 	}
 	/**
 	 * Método que carga el archivo PDF en el visor.
+	 * El CustomAnnotationCallback personaliza el comportamiento al clickar en una firma
 	 */
 	public void cargarPDF() {
 		this.controller.openDocument(this.rutaPDF.toString());
-		this.controller.getDocumentViewController().setAnnotationCallback(
-				new org.icepdf.ri.common.MyAnnotationCallback(controller.getDocumentViewController()));
+		this.controller.setCurrentPageNumberTextField(new JTextField("Pagina:"+ controller.getCurrentPageNumber() + "/" + controller.getPageTree().getNumberOfPages()));
+		if(this.certificado == null || this.firma == null || this.clavePublica == null) {
+			this.controller.getDocumentViewController().setAnnotationCallback(
+					new org.icepdf.ri.common.MyAnnotationCallback(controller.getDocumentViewController()));
+		}else {
+			this.controller.getDocumentViewController().setAnnotationCallback(
+					new CustomAnnotationCallback(controller.getDocumentViewController(),this.firmaVerificada,this.firma,this.clavePublica,this.certificado));
+		}
+		
 	}
 	/**
 	 * Método que configura ciertos valores del visor.
@@ -87,5 +103,12 @@ public class VisorPDF extends JPanel {
 		ComponentKeyBinding.install(this.controller, this);
 		this.controller.setToolBarVisible(false);
 		this.controller.getDocumentViewController().setAnnotationCallback(null);
+	}
+	public void getPropiedadesFirma(Boolean firmaVerificada, byte[] firma, byte[] clavePublica,
+			X509Certificate certificado) {
+		this.firmaVerificada = firmaVerificada;
+		this.firma = firma;
+		this.clavePublica = clavePublica;
+		this.certificado = certificado;
 	}
 }
