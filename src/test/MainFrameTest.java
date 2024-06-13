@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 import java.io.IOException;
 
+import javax.swing.JMenu;
+
 import controlador.Main;
 import controlador.NotarioDigital;
 import vista.FrameVerificacion;
@@ -51,5 +53,12 @@ class MainFrameTest {
 	void testFrameVerificacion() {
 		FrameVerificacion ver = new FrameVerificacion(false, null, null, null);
 		ver.setVisible(false);
+		ver.mostrarContenido("Prueba", "Test");
+	}
+	@Test
+	void testFirmaVisual() {
+		n.abrirArchivoArrastrado(new File(dir + "\\recursos\\pdf_test.pdf"));
+		JMenu submenu = (JMenu) n.getJMenuBar().getMenu(1).getItem(0);
+		submenu.getItem(2).doClick();
 	}
 }

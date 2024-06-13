@@ -87,7 +87,9 @@ class DilithiumTest {
 		assertTrue(verificar.verificarFirmaDocumento(n.buscarFirmaDocumento(n.getDoc())));
 		assertFalse(verificar.verificarFirmaDocumento(new PDSignature()));
 		assertNull(NotarioDigital.buscarFirmaDocumento(docNoFirmado));
-		
+		n.verificar(1);
+		n.firmaAutomatica(3);
+		n.verificar(1);
 	}
 	
 	/**

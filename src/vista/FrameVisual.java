@@ -2,6 +2,8 @@ package vista;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
@@ -13,17 +15,18 @@ import java.awt.event.MouseMotionAdapter;
  * parte del usuario. Este área sirve para decidir la posición y tamaño de la firma digital.
  * @author David García Diez
  */
-public class FrameVisual extends JFrame {
+public class FrameVisual extends JDialog {
 
     private int startX, startY, ancho, alto;
     private boolean dragging, firmaDeseada;
 
-    public FrameVisual(int width, int height, int posX, int posY) {
+    public FrameVisual(Frame owner, int width, int height, int posX, int posY) {
+    	super(owner, "Select Area", true);
         this.setSize(width, height);
         this.setUndecorated(true);    //Necesario para la transparencia
         this.setBackground(new Color(224, 206, 67, 30));
         this.setLocation(posX, posY);
-        this.setVisible(true);
+        
         addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 startX = e.getX();
@@ -49,7 +52,24 @@ public class FrameVisual extends JFrame {
                 }
             }
         });
-        JOptionPane.showMessageDialog(this, "Selecciona el área donde desees crear la firma");
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                	int option = JOptionPane.showOptionDialog(null,
+            				"¿Desea cancerlar la operación de firma?",
+            				"Selección de área",JOptionPane.YES_NO_OPTION, 
+            			      JOptionPane.QUESTION_MESSAGE, 
+            			      null, null, null);
+                	if(option == 0) {
+                		dispose();
+                	}
+                    
+                }
+            }
+        });
+        JOptionPane.showMessageDialog(this, "Selecciona el área donde desees crear la firma.\nPulse ESC si desea cancelar la operación.");
+        this.setVisible(true);
     }
     /**
      * Desaparece el frame. Se utiliza este método para así ocultarlo sin afectar al Frame

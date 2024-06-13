@@ -165,7 +165,7 @@ public class FrameVerificacion extends JFrame {
      * @param titulo El titulo del JDialog
      * @param contenido El contenido del JDialog
      */
-    private static void mostrarContenido(String titulo, String contenido) {
+    public static void mostrarContenido(String titulo, String contenido) {
         JDialog dialogo = new JDialog();
         dialogo.setTitle(titulo);
         

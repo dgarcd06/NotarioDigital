@@ -228,7 +228,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
 
-					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
@@ -271,7 +271,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
 
-					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
@@ -314,7 +314,7 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (pdfCargado == 1) {
 
-					FrameVisual panelFirma = new FrameVisual(visor.getWidth(), visor.getHeight(), getX() + 7,
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
@@ -357,7 +357,7 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(2, 100, 100, 350, 100);
+					firmaAutomatica(2);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -368,7 +368,7 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(3, 100, 100, 350, 100);
+					firmaAutomatica(3);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -379,7 +379,7 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaDocumento(5, 100, 100, 350, 100);
+					firmaAutomatica(5);
 					setPDFCargado(2); // Modificado(para que pregunte por guardar)
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -558,9 +558,72 @@ public class NotarioDigital extends JFrame {
 			doc = PDDocument.load(docFirmado);
 			verificar(0);
 			visor.setDocumento(docFirmado);
+			pdfCargado = 2;
 		}
 	}
+	/**
+	 * Igualmente al metodo firmaDocumento, se encarga de generar las claves, firma y certificado digital con
+	 * la llamada a la clase FirmaDigital. Posteriormente  añade la firma en el PDF con los datos
+	 * generados, de manera NO visible.
+	 * @param nivelSeguridad La preferencia de nivel de seguridad de Dilithium
+	 * @throws IOException Cubre posibles excepciones en varias llamadas de métodos
+	 *                     de ApachePDBox, de la clase FirmaDigital y de la clase
+	 *                     FileOutputStream al generar el archivo firmado.
+	 */
+	public void firmaAutomatica(int nivelSeguridad) throws IOException {
+		firmaDigital = new FirmaDigital(nivelSeguridad);
+		archivo_output = rutaPDF.getAbsolutePath().substring(0, rutaPDF.getAbsolutePath().lastIndexOf("."));
+		archivo_output = archivo_output + "_firmado.pdf";
+		try (FileOutputStream archivoOutput = new FileOutputStream(archivo_output)) {
+			byte[] codigoFirma = firmaDigital.codigoFirma(nivelSeguridad); // El código CMS de la firma digital
 
+			int accessPermissions = SigUtils.getMDPPermission(doc);
+			if (accessPermissions == 1) {
+				throw new IllegalStateException(
+						"No changes to the document are permitted due to DocMDP transform parameters dictionary");
+			}
+			PDSignature signature = new PDSignature();
+			if (doc.getVersion() >= 1.5f && accessPermissions == 0) {
+				SigUtils.setMDPPermission(doc, signature, 2);
+			}
+			PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
+			if (acroForm != null && acroForm.getNeedAppearances()) {
+				if (acroForm.getFields().isEmpty()) {
+					acroForm.getCOSObject().removeItem(COSName.NEED_APPEARANCES);
+				} else {
+					System.out.println("/NeedAppearances is set, signature may be ignored by Adobe Reader");
+				}
+			}
+
+			signature.setFilter(PDSignature.FILTER_ADOBE_PPKLITE);
+			signature.setSubFilter(PDSignature.SUBFILTER_ADBE_PKCS7_DETACHED);
+			signature.setName("David García Diez");
+			signature.setLocation("Universidad de León");
+			signature.setReason("Análisis de Algoritmos Post-Cuánticos");
+			signature.setSignDate(Calendar.getInstance());
+			signature.setContents(firmaDigital.getClavePublica().getEncoded());
+			SignatureInterface signatureInterface = new SignatureInterface() {
+
+				public byte[] sign(InputStream arg0) throws IOException {
+					return firmaDigital.getFirma();
+				}
+			};
+
+			SignatureOptions signatureOptions = new SignatureOptions();
+			signatureOptions.setPreferredSignatureSize(13000);
+			doc.addSignature(signature, signatureInterface);
+			
+			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
+			externalSigning.setSignature(codigoFirma);
+			doc.close();
+			File docFirmado = new File(archivo_output);
+			doc = PDDocument.load(docFirmado);
+			verificar(0);
+			visor.setDocumento(docFirmado);
+			pdfCargado = 2;
+		}
+	}
+	
 	/**
 	 * Función para cargar un archivo arrastrado hacia la pantalla. Similar a la
 	 * funcionalidad del JMenuItem Abrir
@@ -589,7 +652,7 @@ public class NotarioDigital extends JFrame {
 			firmaRapida.setEnabled(true);
 			// Inicializar el controlador de Swing
 			visor = new VisorPDF(new SwingController(), rutaPDF);
-
+			verificar(0);
 			// Agregar el componente de visualización al marco
 
 			getContentPane().add(visor, BorderLayout.CENTER);
@@ -669,7 +732,6 @@ public class NotarioDigital extends JFrame {
 				for (File file : fileList) {
 					if (file.getName().toLowerCase().endsWith(".pdf")) {
 						// Procesar el archivo PDF
-						System.out.println("Ruta del archivo PDF: " + file.getAbsolutePath());
 						abrirArchivoArrastrado(file);
 						break;
 					} else {
