@@ -75,7 +75,7 @@ public class NotarioDigital extends JFrame {
 	private static FirmaDigital firmaDigital; // Para la parte de Modelo de la aplicación
 	private static VisorPDF visor; // Para la parte de Vista de la aplicación
 	private final static String dir = System.getProperty("user.dir"); // Variable para acceder a los recursos del
-																		// proyecto
+	private boolean firmado = false;																// proyecto
 	private JPanel panel;
 	private static String archivo_output;
 	static {
@@ -226,7 +226,7 @@ public class NotarioDigital extends JFrame {
 		 */
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdfCargado == 1) {
+				if (!firmado) {
 
 					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -261,7 +261,7 @@ public class NotarioDigital extends JFrame {
 					worker.execute();
 
 				} else {
-					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+					JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -269,7 +269,7 @@ public class NotarioDigital extends JFrame {
 		});
 		visual3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdfCargado == 1) {
+				if (!firmado) {
 
 					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -304,7 +304,7 @@ public class NotarioDigital extends JFrame {
 					worker.execute();
 
 				} else {
-					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+					JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -312,7 +312,7 @@ public class NotarioDigital extends JFrame {
 		});
 		visual5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (pdfCargado == 1) {
+				if (!firmado) {
 
 					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
 							getY() + 55);
@@ -347,7 +347,7 @@ public class NotarioDigital extends JFrame {
 					worker.execute();
 
 				} else {
-					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
+					JOptionPane.showMessageDialog(null, "No se puede firmar un pdf ya firmado.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -357,8 +357,13 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaAutomatica(2);
-					setPDFCargado(2); // Modificado(para que pregunte por guardar)
+					if(!firmado) {
+						firmaAutomatica(2);
+						setPDFCargado(2);
+					}else {
+						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -368,8 +373,13 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaAutomatica(3);
-					setPDFCargado(2); // Modificado(para que pregunte por guardar)
+					if(!firmado) {
+						firmaAutomatica(3);
+						setPDFCargado(2); 
+					}else {
+						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -379,8 +389,13 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					firmaAutomatica(5);
-					setPDFCargado(2); // Modificado(para que pregunte por guardar)
+					if(!firmado) {	//Solo se puede firmar una vez
+						firmaAutomatica(5);
+						setPDFCargado(2); 
+					}else {
+						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -559,6 +574,7 @@ public class NotarioDigital extends JFrame {
 			verificar(0);
 			visor.setDocumento(docFirmado);
 			pdfCargado = 2;
+			this.firmado = true;
 		}
 	}
 	/**
@@ -621,6 +637,7 @@ public class NotarioDigital extends JFrame {
 			verificar(0);
 			visor.setDocumento(docFirmado);
 			pdfCargado = 2;
+			this.firmado = true;	//Para evitar que se pueda firmar dos veces
 		}
 	}
 	
@@ -695,10 +712,13 @@ public class NotarioDigital extends JFrame {
 			PDSignature firmaDocumento;
 			firmaDocumento = buscarFirmaDocumento(doc);
 			if (firmaDocumento != null) {
+				firmado = true;
 				FirmaDigital verificador = new FirmaDigital();
 				Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
 				visor.getPropiedadesFirma(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
 						verificador.getCertificado());
+			}else {
+				firmado = false;
 			}
 		}
 	}

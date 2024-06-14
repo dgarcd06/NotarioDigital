@@ -24,7 +24,7 @@ public class FrameVisual extends JDialog {
     	super(owner, "Select Area", true);
         this.setSize(width, height);
         this.setUndecorated(true);    //Necesario para la transparencia
-        this.setBackground(new Color(224, 206, 67, 30));
+        this.setBackground(new Color(48, 155, 39, 50));
         this.setLocation(posX, posY);
         
         addMouseListener(new MouseAdapter() {
