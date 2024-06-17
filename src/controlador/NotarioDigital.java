@@ -78,8 +78,7 @@ public class NotarioDigital extends JFrame {
 	private static PDDocument doc; // Objeto de ApachePDFBox para todas las interacciones con el PDF
 	private static FirmaDigital firmaDigital; // Para la parte de Modelo de la aplicación
 	private static VisorPDF visor; // Para la parte de Vista de la aplicación
-	private final static String dir = System.getProperty("user.dir"); // Variable para acceder a los recursos del
-	private boolean firmado = false; // proyecto
+	private final static String dir = System.getProperty("user.dir"); // Variable para acceder a los recursos deld
 	private JPanel panel;
 	private static String archivo_output;
 	static {
@@ -189,6 +188,9 @@ public class NotarioDigital extends JFrame {
 						}
 					} catch (IOException ex) {
 						ex.printStackTrace();
+						JOptionPane.showMessageDialog(null,
+								"No se ha podido cargar el PDF, el formato es incorrecto o está corrupto.",
+								"Error", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 			}
@@ -550,7 +552,6 @@ public class NotarioDigital extends JFrame {
 			verificar(0);
 			visor.setDocumento(docFirmado);
 			pdfCargado = 2;
-			this.firmado = true;
 		}
 	}
 
@@ -615,7 +616,6 @@ public class NotarioDigital extends JFrame {
 			verificar(0);
 			visor.setDocumento(docFirmado);
 			pdfCargado = 2;
-			this.firmado = true; // Para evitar que se pueda firmar dos veces
 		}
 	}
 
@@ -672,7 +672,7 @@ public class NotarioDigital extends JFrame {
 			List<X509Certificate> certs = new ArrayList<X509Certificate>();
 			List<PDSignature> signatures = new ArrayList<PDSignature>();
 			if(tipo == 1) {
-				if (pdfCargado == 1) {
+				if (pdfCargado != 0) {
 					firmasDocumento = buscarFirmaDocumento(doc);
 					if (firmasDocumento != null) {
 						FirmaDigital verificador = new FirmaDigital();
@@ -699,7 +699,6 @@ public class NotarioDigital extends JFrame {
 				firmasDocumento = buscarFirmaDocumento(doc);
 				if (firmasDocumento != null) {
 					FirmaDigital verificador = new FirmaDigital();
-					firmado = true;
 					for(PDField firma : firmasDocumento.getFields()) {
 						if (firma instanceof PDSignatureField) {
 							PDSignatureField signatureField = (PDSignatureField) firma;
@@ -711,9 +710,6 @@ public class NotarioDigital extends JFrame {
 						}
 					} 
 					visor.getPropiedadesFirma(signatures,firmasVerificadas, firmas, claves, certs);
-				}else {
-					firmado = false;
-					
 				}
 			}
 	}
