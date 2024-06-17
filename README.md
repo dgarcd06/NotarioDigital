@@ -2,9 +2,8 @@
 *Notario Digital es una herramienta de Firma Digital y Verificación desarrollada en Java y basada en el algoritmo post-cuántico estandarizado Dilithium, basado en retículos.*
 
 <h1 align="center">Notario Digital</h1>
-<p align="center"> Logo e icono de Notario Digital</p>
 <p align="center"><img src="https://github.com/dgarcd06/NotarioDigital/blob/main/recursos/icono_jframe.png"/></p> 
-
+<p align="center"> Logo e icono de Notario Digital</p>
 ## Tabla de contenidos:
 ---
 
@@ -38,10 +37,7 @@ Una vez instalado, tan sólo será necesaria la ejecución del archivo NotarioDi
 
 
 ### Dependencias
-Descripción de los recursos externos que generan una dependencia para la reutilización de la herramienta digital (librerías, frameworks, acceso a bases de datos y licencias de cada recurso). Es una buena práctica describir las últimas versiones en las que ha sido probada la herramienta digital. 
-
-    Puedes usar este estilo de letra diferenciar los comandos de instalación.
-
+...
 
 ## Autor/es
 ---
