@@ -15,7 +15,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
@@ -59,6 +62,7 @@ import vista.VisorPDF;
 /**
  * Frame principal de la aplicación. Aquí se coordinan las funciones lógicas de
  * Dilithium con el visor PDF.
+ * 
  * @author David García Diez
  */
 @SuppressWarnings("serial")
@@ -75,7 +79,7 @@ public class NotarioDigital extends JFrame {
 	private static FirmaDigital firmaDigital; // Para la parte de Modelo de la aplicación
 	private static VisorPDF visor; // Para la parte de Vista de la aplicación
 	private final static String dir = System.getProperty("user.dir"); // Variable para acceder a los recursos del
-	private boolean firmado = false;																// proyecto
+	private boolean firmado = false; // proyecto
 	private JPanel panel;
 	private static String archivo_output;
 	static {
@@ -226,10 +230,9 @@ public class NotarioDigital extends JFrame {
 		 */
 		visual2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (!firmado) {
 
-					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
-							getY() + 55);
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this, visor.getWidth(), visor.getHeight(),
+							getX() + 7, getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 						@Override
@@ -260,19 +263,15 @@ public class NotarioDigital extends JFrame {
 
 					worker.execute();
 
-				} else {
-					JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
-							JOptionPane.ERROR_MESSAGE);
-				}
+				
 			}
 
 		});
 		visual3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (!firmado) {
 
-					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
-							getY() + 55);
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this, visor.getWidth(), visor.getHeight(),
+							getX() + 7, getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 						@Override
@@ -303,19 +302,14 @@ public class NotarioDigital extends JFrame {
 
 					worker.execute();
 
-				} else {
-					JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
-							JOptionPane.ERROR_MESSAGE);
-				}
 			}
 
 		});
 		visual5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (!firmado) {
 
-					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this,visor.getWidth(), visor.getHeight(), getX() + 7,
-							getY() + 55);
+					FrameVisual panelFirma = new FrameVisual(NotarioDigital.this, visor.getWidth(), visor.getHeight(),
+							getX() + 7, getY() + 55);
 					// SwingWorker para esperar a la asincronía de la selección del área para firmar
 					SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 						@Override
@@ -346,10 +340,6 @@ public class NotarioDigital extends JFrame {
 
 					worker.execute();
 
-				} else {
-					JOptionPane.showMessageDialog(null, "No se puede firmar un pdf ya firmado.", "Error",
-							JOptionPane.ERROR_MESSAGE);
-				}
 			}
 
 		});
@@ -357,13 +347,8 @@ public class NotarioDigital extends JFrame {
 		rapida2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					if(!firmado) {
 						firmaAutomatica(2);
 						setPDFCargado(2);
-					}else {
-						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
-								JOptionPane.ERROR_MESSAGE);
-					}
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -373,13 +358,8 @@ public class NotarioDigital extends JFrame {
 		rapida3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					if(!firmado) {
 						firmaAutomatica(3);
-						setPDFCargado(2); 
-					}else {
-						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
-								JOptionPane.ERROR_MESSAGE);
-					}
+						setPDFCargado(2);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -389,13 +369,8 @@ public class NotarioDigital extends JFrame {
 		rapida5.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					if(!firmado) {	//Solo se puede firmar una vez
 						firmaAutomatica(5);
-						setPDFCargado(2); 
-					}else {
-						JOptionPane.showMessageDialog(null, "No se puede firmar un PDF ya firmado.", "Error",
-								JOptionPane.ERROR_MESSAGE);
-					}
+						setPDFCargado(2);
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -453,6 +428,7 @@ public class NotarioDigital extends JFrame {
 
 	/**
 	 * Guarda cambios en un PDF. Escribe el PDF en la ruta indicada
+	 * 
 	 * @param pdfCargado Se pasa por parametro el estado de carga del pdf
 	 * @return 0 si se ha podido guardar correctamente, 1 si ha habido errores
 	 * @throws IOException En el método save de ApachePDFBox
@@ -577,10 +553,12 @@ public class NotarioDigital extends JFrame {
 			this.firmado = true;
 		}
 	}
+
 	/**
-	 * Igualmente al metodo firmaDocumento, se encarga de generar las claves, firma y certificado digital con
-	 * la llamada a la clase FirmaDigital. Posteriormente  añade la firma en el PDF con los datos
-	 * generados, de manera NO visible.
+	 * Igualmente al metodo firmaDocumento, se encarga de generar las claves, firma
+	 * y certificado digital con la llamada a la clase FirmaDigital. Posteriormente
+	 * añade la firma en el PDF con los datos generados, de manera NO visible.
+	 * 
 	 * @param nivelSeguridad La preferencia de nivel de seguridad de Dilithium
 	 * @throws IOException Cubre posibles excepciones en varias llamadas de métodos
 	 *                     de ApachePDBox, de la clase FirmaDigital y de la clase
@@ -628,7 +606,7 @@ public class NotarioDigital extends JFrame {
 			SignatureOptions signatureOptions = new SignatureOptions();
 			signatureOptions.setPreferredSignatureSize(13000);
 			doc.addSignature(signature, signatureInterface);
-			
+
 			ExternalSigningSupport externalSigning = doc.saveIncrementalForExternalSigning(archivoOutput);
 			externalSigning.setSignature(codigoFirma);
 			doc.close();
@@ -637,10 +615,10 @@ public class NotarioDigital extends JFrame {
 			verificar(0);
 			visor.setDocumento(docFirmado);
 			pdfCargado = 2;
-			this.firmado = true;	//Para evitar que se pueda firmar dos veces
+			this.firmado = true; // Para evitar que se pueda firmar dos veces
 		}
 	}
-	
+
 	/**
 	 * Función para cargar un archivo arrastrado hacia la pantalla. Similar a la
 	 * funcionalidad del JMenuItem Abrir
@@ -679,48 +657,65 @@ public class NotarioDigital extends JFrame {
 		}
 	}
 	
+	/**
+	 * Método que prepara la verificación de dos formas:
+	 * -El tipo 1, que se ejecuta al hacer click en u "Verificar" en el menú de opciones. Esta forma abre 
+	 * un Frame con las firmas encontradas en el documento y sus datos.
+	 * -El tipo 0, que se ejecuta al cargar un PDF y consigue una pre-carga de los datos para cuando se haga click sobre una firma.
+	 * Recoge los datos de firma de un PDF y carga el frame de verificación.
+	 * @param tipo Se usa para separar la funcionalidad de abrir la verificación pulsando sobre una firma y la del menú verificación
+	 */
 	public void verificar(int tipo) {
-		if(tipo == 1) {
-			PDSignature firmaDocumento;
-			if (pdfCargado == 1) {
-
-				firmaDocumento = buscarFirmaDocumento(doc);
-				if (firmaDocumento != null) {
-					FirmaDigital verificador = new FirmaDigital();
-					Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
-					new FrameVerificacion(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
-							verificador.getCertificado());
-				} else {
-					JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
+			PDAcroForm firmasDocumento;
+			List<Boolean> firmasVerificadas = new ArrayList<Boolean>();
+			List<byte[]> firmas = new ArrayList<byte[]>(),claves = new ArrayList<byte[]>();
+			List<X509Certificate> certs = new ArrayList<X509Certificate>();
+			List<PDSignature> signatures = new ArrayList<PDSignature>();
+			if(tipo == 1) {
+				if (pdfCargado == 1) {
+					firmasDocumento = buscarFirmaDocumento(doc);
+					if (firmasDocumento != null) {
+						FirmaDigital verificador = new FirmaDigital();
+						for(PDField firma : firmasDocumento.getFields()) {
+							if (firma instanceof PDSignatureField) {
+								PDSignatureField signatureField = (PDSignatureField) firma;
+								signatures.add(signatureField.getSignature());
+								firmasVerificadas.add(verificador.verificarFirmaDocumento(signatureField.getSignature()));
+								firmas.add(verificador.getFirma());
+								claves.add(verificador.getClavePublica().getEncoded());
+								certs.add(verificador.getCertificado());
+							}
+						}
+						new FrameVerificacion(signatures,firmasVerificadas, firmas, claves, certs);
+					}else {
+						JOptionPane.showMessageDialog(null, "No se ha encontrado una firma en el documento", "Error",
+								JOptionPane.ERROR_MESSAGE);
+					}
+				}else {
+					JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				}
-
-				// Si se ha firmado justo en la ejecución, se aprovechan los datos en memoria
-			} else if (pdfCargado == 2) {
-				try {
-					Boolean firmaVerificada = firmaDigital.verificarFirmaDocumento(doc.getLastSignatureDictionary());
-					new FrameVerificacion(firmaVerificada, firmaDigital.getFirma(),
-							firmaDigital.getClavePublica().getEncoded(), firmaDigital.getCertificado());
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			} else {
-				JOptionPane.showMessageDialog(null, "No se ha cargado ningún PDF.", "Error",
-						JOptionPane.ERROR_MESSAGE);
-			}
-		}else {
-			PDSignature firmaDocumento;
-			firmaDocumento = buscarFirmaDocumento(doc);
-			if (firmaDocumento != null) {
-				firmado = true;
-				FirmaDigital verificador = new FirmaDigital();
-				Boolean firmaVerificada = verificador.verificarFirmaDocumento(firmaDocumento);
-				visor.getPropiedadesFirma(firmaVerificada, verificador.getFirma(), verificador.getClavePublica().getEncoded(),
-						verificador.getCertificado());
 			}else {
-				firmado = false;
+				firmasDocumento = buscarFirmaDocumento(doc);
+				if (firmasDocumento != null) {
+					FirmaDigital verificador = new FirmaDigital();
+					firmado = true;
+					for(PDField firma : firmasDocumento.getFields()) {
+						if (firma instanceof PDSignatureField) {
+							PDSignatureField signatureField = (PDSignatureField) firma;
+							signatures.add(signatureField.getSignature());
+							firmasVerificadas.add(verificador.verificarFirmaDocumento(signatureField.getSignature()));
+							firmas.add(verificador.getFirma());
+							claves.add(verificador.getClavePublica().getEncoded());
+							certs.add(verificador.getCertificado());
+						}
+					} 
+					visor.getPropiedadesFirma(signatures,firmasVerificadas, firmas, claves, certs);
+				}else {
+					firmado = false;
+					
+				}
 			}
-		}
 	}
 
 	/**
@@ -772,6 +767,7 @@ public class NotarioDigital extends JFrame {
 	 * Método para evaluar la modificación de la variable global pdfCargado, que
 	 * sirve como comprobación antes de realizar acciones de carga, guardado o
 	 * incluso de firma y verificación
+	 * 
 	 * @return El estado de carga de un PDF en la aplicación.
 	 */
 	public int getPDFCargado() {
@@ -781,6 +777,7 @@ public class NotarioDigital extends JFrame {
 	/**
 	 * Método para recoger el PDDocument, y poder interactuar con él. Utilizado para
 	 * tests.
+	 * 
 	 * @return El documento cargado o null si no se ha cargado ninguno
 	 */
 	public PDDocument getDoc() {
@@ -798,21 +795,12 @@ public class NotarioDigital extends JFrame {
 	 * @return PDSignature un objeto firma que contendrá los datos de una firma
 	 *         digital. Null si no encuentra un campo de firma
 	 */
-	public static PDSignature buscarFirmaDocumento(PDDocument doc) {
+	public static PDAcroForm buscarFirmaDocumento(PDDocument doc) {
 		PDSignature signature = null;
 		PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm(null);
 
 		if (acroForm == null)
 			return null;
-		for (PDField field : acroForm.getFields()) {
-			if (field instanceof PDSignatureField) {
-				PDSignatureField signatureField = (PDSignatureField) field;
-				signature = signatureField.getSignature();
-				if (signature != null) {
-					return signature;
-				}
-			}
-		}
-		return null;
+		return acroForm;
 	}
 }

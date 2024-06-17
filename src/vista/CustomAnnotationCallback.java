@@ -7,7 +7,9 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.List;
 
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.actions.*;
 import org.icepdf.core.pobjects.annotations.Annotation;
@@ -18,18 +20,19 @@ import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.util.BareBonesBrowserLaunch;
 
 public class CustomAnnotationCallback extends MyAnnotationCallback {
-	private Boolean firmaVerificada;
-	private byte[] firma, clavePublica;
-	X509Certificate certificado;
+	private List<Boolean> firmaVerificada;
+	private List<byte[]> firma, clavePublica;
+	private List<X509Certificate> certificado;
+	private List<PDSignature> signatures;
     private static final Logger logger = Logger.getLogger(CustomAnnotationCallback.class.toString());
 
-    public CustomAnnotationCallback(DocumentViewController documentViewController,Boolean firmaVerificada, byte[] firma, byte[] clavePublica,
-			X509Certificate certificado) {
+    public CustomAnnotationCallback(DocumentViewController documentViewController,List<PDSignature> signatures, List<Boolean> verificados, List<byte[]> firmas, List<byte[]> clavesPublicas, List<X509Certificate> certificados) {
     	super(documentViewController);
-    	this.firmaVerificada = firmaVerificada;
-    	this.firma = firma;
-    	this.clavePublica = clavePublica;
-    	this.certificado = certificado;
+    	this.signatures = signatures;
+    	this.firmaVerificada = verificados;
+    	this.firma = firmas;
+    	this.clavePublica = clavesPublicas;
+    	this.certificado = certificados;
     }
 
     @Override
@@ -51,7 +54,6 @@ public class CustomAnnotationCallback extends MyAnnotationCallback {
     }
 
     private void openCustomFrame() {
-    	new FrameVerificacion(firmaVerificada, firma,
-				clavePublica, certificado);
+    	new FrameVerificacion(signatures,firmaVerificada, firma,clavePublica, certificado);
     }
 }

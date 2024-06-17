@@ -5,6 +5,8 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -13,6 +15,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import com.formdev.flatlaf.FlatLightLaf;
 
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.icepdf.ri.common.ComponentKeyBinding;
 import org.icepdf.ri.common.SwingController;
 import vista.SwingViewBuilder;
@@ -28,9 +31,10 @@ public class VisorPDF extends JPanel {
 	private SwingController controller;
 	private SwingViewBuilder factory;
 	private JPanel panelPDF;
-	private Boolean firmaVerificada;
-	private byte[] firma, clavePublica;
-	X509Certificate certificado;
+	private List<Boolean> firmaVerificada = new ArrayList<Boolean>();
+	private List<PDSignature> signatures = new ArrayList<PDSignature>();
+	private List<byte[]> firma = new ArrayList<byte[]>(), clavePublica= new ArrayList<byte[]>();
+	private List<X509Certificate> certificado = new ArrayList<X509Certificate>();
 	/**
 	 * Prepara la configuración del visor con el archivo que se le pasa
 	 * @param controller este objeto se encarga de configurar el comportamiento del visor PDF
@@ -90,7 +94,7 @@ public class VisorPDF extends JPanel {
 					new org.icepdf.ri.common.MyAnnotationCallback(controller.getDocumentViewController()));
 		}else {
 			this.controller.getDocumentViewController().setAnnotationCallback(
-					new CustomAnnotationCallback(controller.getDocumentViewController(),this.firmaVerificada,this.firma,this.clavePublica,this.certificado));
+					new CustomAnnotationCallback(controller.getDocumentViewController(), this.signatures,this.firmaVerificada,this.firma,this.clavePublica,this.certificado));
 		}
 		
 	}
@@ -104,8 +108,9 @@ public class VisorPDF extends JPanel {
 		this.controller.setToolBarVisible(false);
 		this.controller.getDocumentViewController().setAnnotationCallback(null);
 	}
-	public void getPropiedadesFirma(Boolean firmaVerificada, byte[] firma, byte[] clavePublica,
-			X509Certificate certificado) {
+	public void getPropiedadesFirma(List<PDSignature> signatures,List<Boolean> firmaVerificada, List<byte[]> firma, List<byte[]> clavePublica,
+			List<X509Certificate> certificado) {
+		this.signatures = signatures;
 		this.firmaVerificada = firmaVerificada;
 		this.firma = firma;
 		this.clavePublica = clavePublica;

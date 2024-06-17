@@ -51,7 +51,7 @@ class MainFrameTest {
 	}
 	@Test
 	void testFrameVerificacion() {
-		FrameVerificacion ver = new FrameVerificacion(false, null, null, null);
+		FrameVerificacion ver = new FrameVerificacion(null, null, null, null, null);
 		ver.setVisible(false);
 		ver.mostrarContenido("Prueba", "Test");
 	}

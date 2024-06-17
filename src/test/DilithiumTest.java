@@ -10,6 +10,9 @@ import java.security.cert.X509Certificate;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumPublicKeyParameters;
@@ -83,8 +86,18 @@ class DilithiumTest {
 		PDDocument docNoFirmado = PDDocument.load(new File(dir + "\\recursos\\pdf_test.pdf"));
 		PDDocument docFirmado = PDDocument.load(new File(dir + "\\recursos\\pdf_test_firmado.pdf"));
 		n.abrirArchivoArrastrado(new File(dir + "\\recursos\\pdf_test_firmado.pdf"));
+		PDAcroForm acro = n.buscarFirmaDocumento(n.getDoc());
 		
-		assertTrue(verificar.verificarFirmaDocumento(n.buscarFirmaDocumento(n.getDoc())));
+		if (acro != null) {
+			FirmaDigital verificador = new FirmaDigital();
+			for(PDField firma : acro.getFields()) {
+				if (firma instanceof PDSignatureField) {
+					PDSignatureField signatureField = (PDSignatureField) firma;
+					assertTrue(verificar.verificarFirmaDocumento(signatureField.getSignature()));
+				}
+			}
+		
+		}
 		assertFalse(verificar.verificarFirmaDocumento(new PDSignature()));
 		assertNull(NotarioDigital.buscarFirmaDocumento(docNoFirmado));
 		n.verificar(1);
