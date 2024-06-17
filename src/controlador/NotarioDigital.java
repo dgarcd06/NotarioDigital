@@ -119,7 +119,7 @@ public class NotarioDigital extends JFrame {
 			editar = new JMenu("Editar");
 			verificar = new JMenuItem("Verificar");
 			firmaVisual = new JMenu("Firma Visual");
-			firmaRapida = new JMenu("Firma Automática");
+			firmaRapida = new JMenu("Firma No Visual");
 			verificar.setEnabled(false);
 			firmaVisual.setEnabled(false);
 			firmaRapida.setEnabled(false);
@@ -393,10 +393,10 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(null,
 						"Para utilizar las funcionalidades de firma y verificación deberá haberse cargado un PDF.\n"
-								+ "Puede elegir entre Firma Automática, de manera que la firma se incluirá automáticamente en el documento, o bien seleccionar el área de firma con Firma Visual.\n"
-								+ "Si selecciona Firma Visual, confirme el área seleccionado para añadir la firma en el documento.\n"
+								+ "Puede elegir entre Firma No Visual, de manera que la firma se incluirá automáticamente en el documento, o bien seleccionar el área de firma con Firma Visual.\n"
+								+ "Si selecciona Firma Visual, confirme el área seleccionado para añadir la firma en el documento. Puede pulsar la tecla ESC para cancelar la operación de firma.\n"
 								+ "Dentro de las dos opciones, se puede seleccionar el nivel de seguridad de Dilithium, entre las opciones 2, 3 y 5.\n"
-								+ "Al pulsar Verificación, se buscará una firma en el documento. En el caso de existir la firma, se comprobará su veracidad a partir de la recogida de sus datos del documento.",
+								+ "Al pulsar Verificación, se buscarán firmas en el documento. En el caso de existir una firma, se comprobará su veracidad a partir de la recogida de sus datos del documento.",
 						"Como usar la aplicación", JOptionPane.INFORMATION_MESSAGE);
 
 			}
@@ -407,8 +407,8 @@ public class NotarioDigital extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(null,
 						"Notario Digital es una aplicación de escritorio destinada a la firma y verificación de documentos digitales con el uso del algoritmo Dilithium, finalista del proceso del NIST \"Post-Quantum Cryptography\"."
-								+ "Esta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin de Grado en la Universidad de León."
-								+ "El desarrollo de la aplicación tiene fines de investigación; si bien su desarrollo cumple con la seguridad del algoritmo, el certificado digital no es emitido por una autoridad de certificación, por lo que no podrá validarse según la normativa europea.",
+								+ "\nEsta aplicación ha sido desarrollada por David García Diez, como parte de su Trabajo de Fin de Grado en la Universidad de León."
+								+ "\nEl desarrollo de la aplicación tiene fines de investigación. Los certificados son generados durante el proceso de firma sin contar con una Autoridad de Certificación europea.",
 						"Acerca de...", JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
